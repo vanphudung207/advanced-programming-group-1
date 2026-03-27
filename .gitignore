@@ -1,0 +1,45 @@
+# ==========================================
+# 1. CÁC FILE BIÊN DỊCH CỦA MAVEN
+# ==========================================
+# Bỏ qua thư mục target/ - nơi Maven chứa các file .class và file .jar sau khi build
+target/
+
+# Bỏ qua file log lỗi của Maven (nếu có) để tránh làm rác repo
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# ==========================================
+# 2. FILE CẤU HÌNH CỦA IDE (VS CODE)
+# ==========================================
+# Bỏ qua thư mục .vscode/ chứa các tuỳ chỉnh giao diện, phím tắt của máy cá nhân
+.vscode/
+
+# Bỏ qua thư mục .project, .classpath, .settings (nếu ai đó trong nhóm lỡ dùng Eclipse)
+.project
+.classpath
+.settings/
+.factorypath
+
+# Bỏ qua thư mục .idea/ và các file .iml (nếu ai đó trong nhóm lỡ dùng IntelliJ IDEA)
+.idea/
+*.iml
+*.iws
+
+# ==========================================
+# 3. CÁC FILE LOG & HỆ THỐNG MÁY TÍNH
+# ==========================================
+# Bỏ qua các file log được sinh ra trong lúc chạy thử ứng dụng
+*.log
+
+# Bỏ qua file rác của hệ điều hành macOS (nếu ai đó dùng Mac)
+.DS_Store
+
+# Bỏ qua file rác của hệ điều hành Windows (ẩn hình ảnh thumbnail)
+Thumbs.db
