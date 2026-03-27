@@ -18,7 +18,7 @@ public class MainApp extends Application {
         
         // 1. Chỉ định đường dẫn tới file thiết kế Login.fxml của bạn
         // Lưu ý: Dấu "/" ở đầu đại diện cho thư mục gốc của resources
-        URL fxmlLocation = getClass().getResource("/client/view/Login.fxml");
+        URL fxmlLocation = getClass().getResource("/client/view/Register.fxml");
         
         // 2. Dùng FXMLLoader để đọc file FXML và biến nó thành đối tượng giao diện (Parent)
         FXMLLoader loader = new FXMLLoader(fxmlLocation);

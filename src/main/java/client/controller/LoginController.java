@@ -35,15 +35,24 @@ public class LoginController {
     private void handleLoginAction(ActionEvent event) {
         
         // Lấy dữ liệu chữ mà người dùng vừa gõ vào ô tài khoản và lưu vào biến username dạng String
-        String username = txtUsername.getText(); 
-        
-        // Lấy dữ liệu chữ từ ô mật khẩu và lưu vào biến password dạng String
-        String password = txtPassword.getText(); 
+        String enteredUsername = txtUsername.getText(); 
+        String enteredPassword = txtPassword.getText();
+
+        // ĐỐI CHIẾU DỮ LIỆU VỚI BỘ NHỚ TẠM
+        // Kiểm tra xem tên đăng nhập và mật khẩu có khớp y chang lúc đăng ký không
+        if (enteredUsername.equals(MockDatabase.registeredUsername) && 
+            enteredPassword.equals(MockDatabase.registeredPassword)) {
+                System.out.println("Đăng nhập THÀNH CÔNG! Chào mừng: " + enteredUsername);
+            }
+        else {
+            // Nếu sai tài khoản hoặc mật khẩu
+            System.out.println("Đăng nhập THẤT BẠI! Sai tài khoản hoặc mật khẩu.");
+        }
+
 
         // (Phần này sau sẽ gọi đến class Network để gửi username/password lên Server xác thực)
         
-        // Tạm thời in ra màn hình console để test xem hàm có chạy và lấy đúng dữ liệu không
-        System.out.println("Hệ thống đang xử lý đăng nhập cho tài khoản: " + username); 
+        // Tạm thời in ra màn hình console để test xem hàm có chạy và lấy đúng dữ liệu không 
         
     } // Kết thúc hàm xử lý sự kiện bấm nút đăng nhập
 
