@@ -40,13 +40,11 @@ public class LoginController {
 
         // ĐỐI CHIẾU DỮ LIỆU VỚI BỘ NHỚ TẠM
         // Kiểm tra xem tên đăng nhập và mật khẩu có khớp y chang lúc đăng ký không
-        if (enteredUsername.equals(MockDatabase.registeredUsername) && 
-            enteredPassword.equals(MockDatabase.registeredPassword)) {
-                System.out.println("Đăng nhập THÀNH CÔNG! Chào mừng: " + enteredUsername);
-            }
-        else {
-            // Nếu sai tài khoản hoặc mật khẩu
-            System.out.println("Đăng nhập THẤT BẠI! Sai tài khoản hoặc mật khẩu.");
+        if (MockDatabase.checkLogin(enteredUsername, enteredPassword)) {
+            System.out.println("Login successful! Welcome: " + enteredUsername);
+            // (Chỗ này sau sẽ viết code chuyển sang màn hình Danh sách sản phẩm)
+        } else {
+            System.out.println("Login failed! Incorrect username or password.");
         }
 
 
