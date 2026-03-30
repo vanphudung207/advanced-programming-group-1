@@ -1,57 +1,41 @@
-
 package client.controller;
 
-// Import annotation FXML để liên kết biến trong Java với các thành phần thiết kế bên file .fxml
-import javafx.fxml.FXML; 
-// Import class để tạo ô nhập mật khẩu (tự động ẩn ký tự thành dấu sao)
-import javafx.scene.control.PasswordField; 
-// Import class để tạo ô nhập văn bản bình thường (dùng cho tên đăng nhập)
-import javafx.scene.control.TextField; 
-// Import class để tạo nút bấm trên màn hình
-import javafx.scene.control.Button; 
-// Import class để xử lý các sự kiện tương tác của người dùng (như click chuột, ấn Enter)
-import javafx.event.ActionEvent; 
+import javafx.animation.FadeTransition;
+import javafx.event.ActionEvent;
+import javafx.fxml.FXML;
+import javafx.scene.control.PasswordField;
+import javafx.scene.control.TextField;
+// Import StackPane thay cho VBox
+import javafx.scene.layout.StackPane; 
+import javafx.util.Duration;
 
-// Bắt đầu khai báo lớp LoginController để xử lý toàn bộ logic của màn hình đăng nhập
 public class LoginController {
 
-    // Dùng @FXML báo cho chương trình biết biến này sẽ gắn với ô TextBox có ID tương ứng bên giao diện
-    @FXML 
-    // Khai báo biến đại diện cho ô nhập tên tài khoản
-    private TextField txtUsername; 
+    // CHÚ Ý: Đã đổi thành StackPane để khớp với file Login.fxml mới
+    @FXML
+    private StackPane rootPane; 
 
-    // Liên kết biến với ô nhập mật khẩu bên giao diện FXML
-    @FXML 
-    // Khai báo biến đại diện cho ô nhập mật khẩu
-    private PasswordField txtPassword; 
+    @FXML private TextField txtUsername;
+    @FXML private PasswordField txtPassword;
 
-    // Liên kết biến với nút bấm bên giao diện FXML
-    @FXML 
-    // Khai báo biến đại diện cho nút "Đăng nhập"
-    private Button btnLogin; 
+    @FXML
+    public void initialize() {
+        // Hiệu ứng mờ dần
+        FadeTransition fadeIn = new FadeTransition(Duration.millis(1000), rootPane);
+        fadeIn.setFromValue(0.0);
+        fadeIn.setToValue(1.0);
+        fadeIn.play();
+    }
 
-    // Hàm này sẽ được tự động kích hoạt khi người dùng click vào nút Đăng nhập trên màn hình
-    @FXML 
+    @FXML
     private void handleLoginAction(ActionEvent event) {
-        
-        // Lấy dữ liệu chữ mà người dùng vừa gõ vào ô tài khoản và lưu vào biến username dạng String
         String enteredUsername = txtUsername.getText(); 
-        String enteredPassword = txtPassword.getText();
+        String enteredPassword = txtPassword.getText(); 
 
-        // ĐỐI CHIẾU DỮ LIỆU VỚI BỘ NHỚ TẠM
-        // Kiểm tra xem tên đăng nhập và mật khẩu có khớp y chang lúc đăng ký không
         if (MockDatabase.checkLogin(enteredUsername, enteredPassword)) {
             System.out.println("Login successful! Welcome: " + enteredUsername);
-            // (Chỗ này sau sẽ viết code chuyển sang màn hình Danh sách sản phẩm)
         } else {
             System.out.println("Login failed! Incorrect username or password.");
         }
-
-
-        // (Phần này sau sẽ gọi đến class Network để gửi username/password lên Server xác thực)
-        
-        // Tạm thời in ra màn hình console để test xem hàm có chạy và lấy đúng dữ liệu không 
-        
-    } // Kết thúc hàm xử lý sự kiện bấm nút đăng nhập
-
-} // Kết thúc lớp LoginController
+    }
+}

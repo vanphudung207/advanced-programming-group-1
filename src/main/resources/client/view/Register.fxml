@@ -5,42 +5,40 @@
 <?import javafx.scene.control.PasswordField?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.control.Hyperlink?>
 
-<VBox fx:controller="client.controller.RegisterController" 
-      alignment="CENTER" 
-      spacing="15.0" 
-      xmlns:fx="http://javafx.com/fxml/1"
-      style="-fx-padding: 20px;">
-      <Label text="REGISTER A NEW ACCOUNT" 
-           style="-fx-font-size: 18px; -fx-font-weight: bold;"/>
+<StackPane fx:id="rootPane"
+           fx:controller="client.controller.RegisterController" 
+           stylesheets="@../css/style.css"
+           styleClass="root-container"
+           xmlns:fx="http://javafx.com/fxml/1">
 
-    <TextField fx:id="txtFullName" 
-               promptText="Enter your first and last name..." 
-               maxWidth="250.0"/>
+    <VBox alignment="CENTER" spacing="15.0" styleClass="form-box">
+          
+        <Label text="REGISTER A NEW ACCOUNT" 
+               style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #ffffff;"/>
 
-    <TextField fx:id="txtUsername" 
-               promptText="Enter your username..."
-               maxWidth="250.0"/>
+        <TextField fx:id="txtUsername" 
+                   promptText="Enter your username..."/>
 
-    <PasswordField fx:id="txtPassword" 
-                   promptText="Enter password..." 
-                   maxWidth="250.0"/>
+        <PasswordField fx:id="txtPassword" 
+                       promptText="Enter password..." />
 
-    <PasswordField fx:id="txtConfirmPassword" 
-                   promptText="Confirm your password..." 
-                   maxWidth="250.0"/>
+        <PasswordField fx:id="txtConfirmPassword" 
+                       promptText="Confirm your password..." />
 
-    <ComboBox fx:id="cbRole" 
-              promptText="Choose your role" 
-              maxWidth="250.0"/>
+        <ComboBox fx:id="cbRole" 
+                  promptText="Choose your role" 
+                  maxWidth="250.0"/>
 
-    <Button fx:id="btnRegister" 
-            text="Register now" 
-            onAction="#handleRegisterAction" 
-            prefWidth="150.0"
-            style="-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-weight: bold;"/>
-    <Hyperlink text="Already have an account? Log in now!" 
-               onAction="#switchToLogin" 
-               style="-fx-text-fill: #2196F3; -fx-underline: true;"/>  
-            </VBox>
+        <Button fx:id="btnRegister" 
+                text="Register now" 
+                onAction="#handleRegisterAction" />
+                
+        <Hyperlink text="Already have an account? Log in now!" 
+                   onAction="#switchToLogin" 
+                   styleClass="hyperlink"/>  
+                   
+    </VBox>
+</StackPane>

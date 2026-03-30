@@ -1,0 +1,57 @@
+/* src/main/resources/client/css/style.css */
+
+/* 1. Định nghĩa class chung cho khung chứa gốc (Container) */
+.root-container {
+    /* ĐẶT ẢNH NỀN: Dùng đường dẫn tương đối từ file CSS này đến file ảnh */
+    -fx-background-image: url("../assets/logo.png");
+    -fx-background-repeat: no-repeat;
+    -fx-background-size: cover; /* Phủ kín toàn bộ cửa sổ */
+    -fx-background-position: center center; /* Căn giữa ảnh */
+}
+
+/* 2. Tạo một khối mờ (đục) chứa Form để dễ đọc chữ trên nền ảnh phức tạp */
+.form-box {
+    -fx-padding: 30px;
+    -fx-background-radius: 15px; /* Bo góc khối form */
+    -fx-spacing: 15px;
+    -fx-alignment: center;
+    -fx-max-width: 380px; /* Giới hạn chiều rộng khối form */
+}
+
+/* 3. Style cho các ô nhập liệu (giống ảnh cũ nhưng bo tròn và đẹp hơn) */
+.text-field {
+    -fx-background-radius: 20px;
+    -fx-border-radius: 20px;
+    -fx-border-color: #ddd;
+    -fx-padding: 10px 15px;
+    -fx-prompt-text-fill: #888;
+}
+.text-field:focused {
+    -fx-border-color: #2196F3; /* Viền xanh dương khi click vào */
+    -fx-border-width: 2px;
+}
+
+/* 4. Style cho nút bấm Login (Màu xanh lá bo tròn mạnh) */
+.button {
+    -fx-background-color: #4CAF50;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-font-size: 14px;
+    -fx-background-radius: 25px; /* Bo tròn nút bấm */
+    -fx-padding: 10px 30px;
+    -fx-cursor: hand;
+}
+.button:hover {
+    -fx-background-color: #45a049; /* Đậm hơn khi rê chuột */
+}
+
+/* 5. Style cho Hyperlink (Already have account...?) */
+.hyperlink {
+    -fx-text-fill: #f7f7f7;
+    -fx-underline: true;
+}
+
+/* Đổi màu tất cả các Label (chữ tiêu đề) nằm trong form-box sang màu trắng cho dễ đọc */
+.form-box .label {
+    -fx-text-fill: white;
+}

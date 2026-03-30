@@ -25,7 +25,7 @@ public class MainApp extends Application {
         Parent root = loader.load();
 
         // 3. Đặt toàn bộ giao diện vào một "khung cảnh" (Scene) với kích thước 450x300 pixel
-        Scene scene = new Scene(root, 450, 300);
+        Scene scene = new Scene(root, 600, 550);
 
         // 4. Thiết lập các thông số cho cửa sổ phần mềm (Stage)
         primaryStage.setTitle("Hệ thống Đấu giá Trực tuyến"); // Tiêu đề cửa sổ
