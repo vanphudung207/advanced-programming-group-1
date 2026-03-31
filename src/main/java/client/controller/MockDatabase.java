@@ -81,11 +81,10 @@ public class MockDatabase {
 
         // Tạo thủ công 4 sản phẩm giả lập giống hệt như ảnh thiết kế của bạn
         // (ID, Tên, Giá, Thời gian, Đường dẫn ảnh - Tạm thời dùng icon thay cho ảnh thật)
-        products.add(new Product("SP01", "iPhone 15 Pro Max", 950.0, "1h 15m", "📱"));
-        products.add(new Product("SP02", "MacBook Air M3", 1200.0, "45m", "💻"));
-        products.add(new Product("SP03", "PlayStation 5 Slim", 480.0, "3h 20m", "🎮"));
-        products.add(new Product("SP04", "Apple Watch Series 9", 320.0, "55m", "⌚"));
-
+        products.add(new Product("SP01", "iPhone 15 Pro Max", 950.0, "1h 15m", "https://onewaymobile.vn/images/products/2024/12/02/original/11_1733114620.png"));
+        products.add(new Product("SP02", "MacBook Air M3", 1200.0, "45m", "https://via.placeholder.com/200x150/000000/FFFFFF?text=MacBook+Air"));
+        products.add(new Product("SP03", "PlayStation 5 Slim", 480.0, "3h 20m", "https://via.placeholder.com/200x150/000000/FFFFFF?text=PS5+Slim"));
+        products.add(new Product("SP04", "Apple Watch Series 9", 320.0, "55m", "https://via.placeholder.com/200x150/000000/FFFFFF?text=Apple+Watch"));
         // Trả danh sách này về cho bên Giao diện (Controller) xử lý
         return products;
     }

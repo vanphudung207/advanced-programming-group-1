@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox alignment="CENTER" prefHeight="600.0" prefWidth="800.0" spacing="20.0" style="-fx-background-color: #ecf0f1;" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="client.controller.AuctionRoomController">
+   <children>
+      <Label style="-fx-font-size: 24px; -fx-font-weight: bold;" text="PHÒNG ĐẤU GIÁ" />
+      <Label fx:id="lblProductName" style="-fx-font-size: 18px; -fx-text-fill: #e74c3c;" text="Đang tải dữ liệu sản phẩm..." />
+      <Label text="(Khu vực này dành cho Thành viên số 3 thiết kế)" />
+   </children>
+</VBox>
