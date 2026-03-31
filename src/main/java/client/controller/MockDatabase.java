@@ -8,8 +8,13 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import client.model.Product;
 
 public class MockDatabase {
+
+    public static String registeredUsername = null;
     
     // Khai báo đường dẫn và tên file sẽ lưu trên ổ cứng. 
     // File này sẽ tự động được tạo ra ngay trong thư mục dự án OnlineAuctionSystem của bạn.
@@ -65,5 +70,23 @@ public class MockDatabase {
         
         // Nếu đọc hết file mà không thấy dòng nào khớp, trả về false (đăng nhập thất bại)
         return false; 
+    }
+    // ==============================================================
+    // HÀM LẤY DANH SÁCH SẢN PHẨM (Dùng cho màn hình ProductList)
+    // TODO: TEAM DATABASE - Hãy xóa dữ liệu giả này đi và thay bằng lệnh SELECT từ MySQL
+    // ==============================================================
+    public static List<Product> getAllProducts() {
+        // Tạo một danh sách rỗng để chứa các sản phẩm
+        List<Product> products = new ArrayList<>();
+
+        // Tạo thủ công 4 sản phẩm giả lập giống hệt như ảnh thiết kế của bạn
+        // (ID, Tên, Giá, Thời gian, Đường dẫn ảnh - Tạm thời dùng icon thay cho ảnh thật)
+        products.add(new Product("SP01", "iPhone 15 Pro Max", 950.0, "1h 15m", "📱"));
+        products.add(new Product("SP02", "MacBook Air M3", 1200.0, "45m", "💻"));
+        products.add(new Product("SP03", "PlayStation 5 Slim", 480.0, "3h 20m", "🎮"));
+        products.add(new Product("SP04", "Apple Watch Series 9", 320.0, "55m", "⌚"));
+
+        // Trả danh sách này về cho bên Giao diện (Controller) xử lý
+        return products;
     }
 }

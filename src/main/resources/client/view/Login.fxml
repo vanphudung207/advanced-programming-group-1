@@ -6,6 +6,8 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.layout.StackPane?>
 
+<?import javafx.scene.control.Hyperlink?>
+
 <StackPane fx:id="rootPane"
            fx:controller="client.controller.LoginController"
            stylesheets="@../css/style.css"
@@ -24,6 +26,10 @@
         <PasswordField fx:id="txtPassword" promptText="Enter password..."/>
 
         <Button fx:id="btnLogin" text="Login" onAction="#handleLoginAction"/>
+
+        <Hyperlink text="Don't have an account? Register now!" 
+                   onAction="#switchToRegister" 
+                   style="-fx-text-fill: #FFD700; -fx-underline: true;"/>
 
     </VBox>
 </StackPane>
