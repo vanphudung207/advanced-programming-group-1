@@ -12,6 +12,8 @@
 <?import javafx.scene.control.MenuButton?>
 <?import javafx.scene.control.MenuItem?>
 <?import javafx.scene.control.CustomMenuItem?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
 
 <BorderPane fx:controller="client.controller.ProductListController" 
             stylesheets="@../css/style.css"
@@ -67,8 +69,60 @@
             </HBox>
 
         </VBox>
-    </top>
+    </top><top>
+      <VBox>
+         <children>
+            
+            <HBox alignment="CENTER" spacing="20.0" style="-fx-background-color: #e64a19; -fx-padding: 8px 20px;">
+               <children>
+                  <Label style="-fx-text-fill: white; -fx-font-size: 13px;" text="Hà Nội, Việt Nam" />
+                  
+                  <Label fx:id="lblDateTime" style="-fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: bold;" text="Đang tải thời gian..." />
+                  
+                  <Region HBox.hgrow="ALWAYS" />
+                  
+                  <Button mnemonicParsing="false" onAction="#handleGoToAddProduct" style="-fx-background-color: white; -fx-text-fill: #e64a19; -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 5px 15px; -fx-background-radius: 5px;" text="➕ Đăng sản phẩm" />
+                  
+                  <MenuButton mnemonicParsing="false" style="-fx-background-color: transparent; -fx-border-color: white; -fx-border-radius: 5px; -fx-text-fill: white; -fx-cursor: hand;" text="Tài khoản">
+                     <items>
+                        <CustomMenuItem hideOnClick="false">
+                           <content>
+                              <Button fx:id="btnInfo" onAction="#handleShowInfo" style="-fx-background-color: transparent; -fx-text-fill: #333; -fx-font-weight: bold; -fx-cursor: hand;" text="Thông tin" />
+                           </content>
+                        </CustomMenuItem>
+                        <MenuItem mnemonicParsing="false" onAction="#handleLogoutAction" text="Đăng xuất" />
+                     </items>
+                  </MenuButton>
+               </children>
+            </HBox>
 
+            <HBox alignment="CENTER_LEFT" spacing="30.0" style="-fx-background-color: white; -fx-padding: 15px 30px; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 5, 0, 0, 2);">
+               <children>
+                  
+                  <VBox alignment="CENTER">
+                     <children>
+                        <Label style="-fx-text-fill: #c0392b; -fx-font-size: 36px; -fx-font-weight: bold;" text="⚖ NALAF" />
+                        <Label style="-fx-text-fill: #7f8c8d; -fx-font-size: 14px;" text="Lựa chọn cho thành công" />
+                     </children>
+                  </VBox>
+                  
+                  <Region HBox.hgrow="ALWAYS" />
+                  
+                  <VBox alignment="CENTER" spacing="5.0">
+                     <children>
+                        <Label style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #5D4037;" text="HỆ THỐNG ĐẤU GIÁ TRỰC TUYẾN - GROUP 1" />
+                        <Label style="-fx-font-size: 22px; -fx-text-fill: #5D4037;" text="TỔ CHỨC THỰC HIỆN ĐẤU GIÁ CHUYÊN NGHIỆP &amp; MINH BẠCH" />
+                     </children>
+                  </VBox>
+                  
+                  <Region HBox.hgrow="ALWAYS" />
+                  
+               </children>
+            </HBox>
+            
+         </children>
+      </VBox>
+   </top>
     <center>
         <ScrollPane fitToWidth="true" style="-fx-background-color: transparent;">
             <FlowPane fx:id="productContainer" hgap="20.0" vgap="20.0" style="-fx-padding: 20px; -fx-background-color: #ecf0f1;">

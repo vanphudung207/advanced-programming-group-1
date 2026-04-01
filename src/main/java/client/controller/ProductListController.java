@@ -52,88 +52,93 @@ public class ProductListController {
     }
 
     // ==============================================================
-    // HÀM TẢI VÀ VẼ DANH SÁCH SẢN PHẨM LÊN LƯỚI
+    // HÀM TẢI VÀ VẼ DANH SÁCH SẢN PHẨM LÊN LƯỚI (ĐÃ TRANG TRÍ HOVER & BO GÓC)
     // ==============================================================
     private void loadProductsToGrid() {
-        // Xóa sạch các sản phẩm cũ (nếu có) trước khi vẽ cái mới để không bị nhân đôi
         productContainer.getChildren().clear();
-
-        // Lấy danh sách sản phẩm từ cơ sở dữ liệu giả (Sau này sẽ lấy từ Backend)
         List<Product> products = MockDatabase.getAllProducts();
 
-        // Vòng lặp: Duyệt qua từng món hàng để "vẽ" ra một cái Thẻ (Card)
         for (Product p : products) {
             
             // --- 1. TẠO KHUNG NGOÀI CỦA THẺ (VBox) ---
-            VBox card = new VBox(10); // 10 là khoảng cách (spacing) giữa các dòng bên trong thẻ
-            card.setStyle("-fx-background-color: white; -fx-padding: 15px; -fx-background-radius: 10px; "
-                        + "-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 5, 0, 0, 2);");
-            card.setPrefWidth(220); // Ép chiều rộng của thẻ là 220px để các thẻ đều nhau
-            card.setAlignment(Pos.TOP_CENTER); // Căn lề giữa cho đẹp
+            VBox card = new VBox(10); 
+            // Lưu sẵn 2 chuỗi Style để lát nữa dùng cho hiệu ứng Hover (Di chuột)
+            String normalStyle = "-fx-background-color: white; -fx-padding: 15px; -fx-background-radius: 10px; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 5, 0, 0, 2);";
+            String hoverStyle  = "-fx-background-color: white; -fx-padding: 15px; -fx-background-radius: 10px; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.3), 15, 0, 0, 5); -fx-cursor: hand;";
+            
+            card.setStyle(normalStyle);
+            card.setPrefWidth(220); 
+            card.setAlignment(Pos.TOP_CENTER); 
 
-            // --- 2. XỬ LÝ ẢNH SẢN PHẨM (Nâng cấp lên ImageView) ---
+            // HIỆU ỨNG HOVER CHO THẺ: Đưa chuột vào thì đổ bóng to ra (nổi lên), lôi ra thì xẹp xuống
+            card.setOnMouseEntered(e -> card.setStyle(hoverStyle));
+            card.setOnMouseExited(e -> card.setStyle(normalStyle));
+
+            // --- 2. XỬ LÝ ẢNH SẢN PHẨM (Có bo tròn góc) ---
             ImageView imgView = new ImageView();
             try {
-                // Tải ảnh từ đường dẫn. Chữ 'true' ở cuối giúp tải ngầm, app không bị đơ
                 Image img = new Image(p.getImagePath(), true);
                 imgView.setImage(img);
             } catch (Exception ex) {
                 System.out.println("Lỗi tải ảnh cho: " + p.getName());
             }
             
-            // Ép kích thước ảnh cố định để khung hình không bị nhảy lung tung
             imgView.setFitWidth(180); 
             imgView.setFitHeight(130);
-            imgView.setPreserveRatio(true); // Giữ tỷ lệ gốc để ảnh không bị bóp méo
+            imgView.setPreserveRatio(true);
 
-            // Đặt ảnh vào một khung VBox riêng để căn giữa dễ dàng hơn
+            // TẠO MẶT NẠ BO GÓC CHO ẢNH (Clip)
+            javafx.scene.shape.Rectangle clip = new javafx.scene.shape.Rectangle(180, 130);
+            clip.setArcWidth(15);  // Độ cong của góc (số càng to càng tròn)
+            clip.setArcHeight(15);
+            imgView.setClip(clip); // Áp mặt nạ vào ảnh
+
             VBox imageContainer = new VBox(imgView);
             imageContainer.setAlignment(Pos.CENTER);
             imageContainer.setPrefHeight(130);
 
             // --- 3. HIỂN THỊ TÊN SẢN PHẨM ---
             Label nameLabel = new Label(p.getName());
-            nameLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px;");
+            nameLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 15px; -fx-text-fill: #2c3e50;");
 
-            // --- 4. HIỂN THỊ CHỮ "Current bid" NHỎ MÀU XÁM ---
+            // --- 4. HIỂN THỊ CHỮ "Current bid" ---
             Label bidSubtitle = new Label("Current bid");
-            bidSubtitle.setStyle("-fx-text-fill: gray; -fx-font-size: 11px;");
+            bidSubtitle.setStyle("-fx-text-fill: #7f8c8d; -fx-font-size: 11px;");
 
-            // --- 5. TẠO KHUNG CHỨA GIÁ TIỀN & THỜI GIAN (HBox: Dàn hàng ngang) ---
+            // --- 5. TẠO KHUNG CHỨA GIÁ TIỀN & THỜI GIAN ---
             HBox priceTimeBox = new HBox();
             priceTimeBox.setAlignment(Pos.CENTER);
-            priceTimeBox.setSpacing(20); // Ép giá và thời gian cách nhau 20px
+            priceTimeBox.setSpacing(20); 
 
             Label priceLabel = new Label("$" + p.getCurrentBid());
-            priceLabel.setStyle("-fx-text-fill: #e74c3c; -fx-font-weight: bold; -fx-font-size: 16px;");
+            priceLabel.setStyle("-fx-text-fill: #e74c3c; -fx-font-weight: bold; -fx-font-size: 17px;");
 
             Label timeLabel = new Label("⏱ " + p.getTimeRemaining());
-            timeLabel.setStyle("-fx-text-fill: #2980b9; -fx-font-weight: bold;");
+            timeLabel.setStyle("-fx-text-fill: #2980b9; -fx-font-weight: bold; -fx-background-color: #ebf5fb; -fx-padding: 3px 8px; -fx-background-radius: 5px;");
 
-            priceTimeBox.getChildren().addAll(priceLabel, timeLabel); // Nhét giá và giờ vào chung 1 dòng ngang
+            priceTimeBox.getChildren().addAll(priceLabel, timeLabel); 
 
-            // --- 6. TẠO NÚT "Bid Now" ---
+            // --- 6. TẠO NÚT "Bid Now" (Có hiệu ứng Hover đổi màu) ---
             Button btnBid = new Button("Bid Now");
-            btnBid.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold; "
-                          + "-fx-cursor: hand; -fx-background-radius: 5px; -fx-padding: 8px 15px;");
-            btnBid.setMaxWidth(Double.MAX_VALUE); // Cho nút dàn trải full chiều ngang của thẻ
+            String btnNormal = "-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 5px; -fx-padding: 8px 15px;";
+            String btnHover  = "-fx-background-color: #2ecc71; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand; -fx-background-radius: 5px; -fx-padding: 8px 15px;";
             
-            // (Chúng ta sẽ thêm sự kiện chuyển trang cho nút này ở bước tiếp theo)
-            // ==============================================================
-            // MỚI THÊM VÀO: Bắt sự kiện khi người dùng click vào nút Bid Now
-            // ==============================================================
+            btnBid.setStyle(btnNormal);
+            btnBid.setMaxWidth(Double.MAX_VALUE); 
+            
+            // Đưa chuột vào nút thì nút sáng màu xanh lên
+            btnBid.setOnMouseEntered(e -> btnBid.setStyle(btnHover));
+            btnBid.setOnMouseExited(e -> btnBid.setStyle(btnNormal));
+            
+            // Xử lý sự kiện click chuyển sang phòng đấu giá (Code cũ giữ nguyên)
             btnBid.setOnAction(event -> {
                 try {
-                    // 1. Tải file giao diện Phòng đấu giá (Bản nháp)
                     javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(getClass().getResource("/client/view/AuctionRoom.fxml"));
                     javafx.scene.Parent auctionRoot = loader.load();
                     
-                    // 2. LẤY CONTROLLER CỦA PHÒNG ĐẤU GIÁ ĐỂ TRUYỀN DỮ LIỆU
                     AuctionRoomController roomController = loader.getController();
-                    // Truyền nguyên cái thẻ sản phẩm 'p' (Product) hiện tại sang cho phòng đấu giá
                     roomController.setProductData(p);
                     
-                    // 3. Mở cửa sổ Phòng đấu giá
                     javafx.stage.Stage stage = (javafx.stage.Stage) ((javafx.scene.Node) event.getSource()).getScene().getWindow();
                     stage.setScene(new javafx.scene.Scene(auctionRoot, 900, 650));
                     stage.setMaximized(true); 
@@ -144,10 +149,11 @@ public class ProductListController {
                     e.printStackTrace();
                 }
             });
-            // --- 7. RÁP TẤT CẢ VÀO THẺ (Từ trên xuống dưới) ---
+
+            // --- 7. RÁP TẤT CẢ VÀO THẺ ---
             card.getChildren().addAll(imageContainer, nameLabel, bidSubtitle, priceTimeBox, btnBid);
 
-            // --- 8. ĐƯA THẺ VÀO LƯỚI TRÊN MÀN HÌNH ---
+            // --- 8. ĐƯA THẺ VÀO LƯỚI ---
             productContainer.getChildren().add(card);
         }
     }
