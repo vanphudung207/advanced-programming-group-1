@@ -22,15 +22,14 @@
         <TextField fx:id="txtUsername" 
                    promptText="Enter your username..."/>
 
+        <TextField fx:id="txtPhone" 
+                   promptText="Enter your phone number..." />
+
         <PasswordField fx:id="txtPassword" 
                        promptText="Enter password..." />
 
         <PasswordField fx:id="txtConfirmPassword" 
                        promptText="Confirm your password..." />
-
-        <ComboBox fx:id="cbRole" 
-                  promptText="Choose your role" 
-                  maxWidth="250.0"/>
 
         <Button fx:id="btnRegister" 
                 text="Register now" 

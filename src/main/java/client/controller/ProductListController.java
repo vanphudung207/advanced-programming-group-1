@@ -105,18 +105,19 @@ public class ProductListController {
             Label bidSubtitle = new Label("Current bid");
             bidSubtitle.setStyle("-fx-text-fill: #7f8c8d; -fx-font-size: 11px;");
 
-            // --- 5. TẠO KHUNG CHỨA GIÁ TIỀN & THỜI GIAN ---
-            HBox priceTimeBox = new HBox();
+            // --- 5. TẠO KHUNG CHỨA GIÁ TIỀN & THỜI GIAN (Xếp dọc VBox để chống tràn chữ) ---
+            // Đổi HBox thành VBox, khoảng cách giữa 2 dòng là 8px
+            VBox priceTimeBox = new VBox(8); 
             priceTimeBox.setAlignment(Pos.CENTER);
-            priceTimeBox.setSpacing(20); 
 
-            Label priceLabel = new Label("$" + p.getCurrentBid());
-            priceLabel.setStyle("-fx-text-fill: #e74c3c; -fx-font-weight: bold; -fx-font-size: 17px;");
+            Label priceLabel = new Label(String.format("%,.0f VNĐ", p.getCurrentBid()));
+            priceLabel.setStyle("-fx-text-fill: #e74c3c; -fx-font-weight: bold; -fx-font-size: 16px;");
 
             Label timeLabel = new Label("⏱ " + p.getTimeRemaining());
             timeLabel.setStyle("-fx-text-fill: #2980b9; -fx-font-weight: bold; -fx-background-color: #ebf5fb; -fx-padding: 3px 8px; -fx-background-radius: 5px;");
 
-            priceTimeBox.getChildren().addAll(priceLabel, timeLabel); 
+            // Nhét Giá (trên) và Thời gian (dưới) vào chung 1 cột
+            priceTimeBox.getChildren().addAll(priceLabel, timeLabel);
 
             // --- 6. TẠO NÚT "Bid Now" (Có hiệu ứng Hover đổi màu) ---
             Button btnBid = new Button("Bid Now");
@@ -180,13 +181,24 @@ public class ProductListController {
     }
 
     // ==============================================================
-    // HÀM XỬ LÝ NÚT "THÔNG TIN" TÀI KHOẢN
+    // HÀM XỬ LÝ NÚT "THÔNG TIN" TÀI KHOẢN (ĐÃ NÂNG CẤP HIỂN THỊ SĐT)
     // ==============================================================
     @FXML
     private void handleShowInfo(javafx.event.ActionEvent event) {
         if (MockDatabase.registeredUsername != null) {
-            btnInfo.setText("Tên TK: " + MockDatabase.registeredUsername);
+            
+            // 1. Lấy tên tài khoản hiện tại
+            String username = MockDatabase.registeredUsername;
+            
+            // 2. Chạy sang Database để "lục" số điện thoại của người này
+            String phone = MockDatabase.getUserPhone(username);
+            
+            // 3. Gắn cả Tên và SĐT lên cái nút 
+            btnInfo.setText("Tên TK: " + username + "\nSĐT: " + phone);
+            
+            // 4. Đổi màu chữ sang xanh báo hiệu thành công
             btnInfo.setStyle("-fx-background-color: transparent; -fx-text-fill: #27ae60; -fx-font-weight: bold; -fx-cursor: default;");
+            
         } else {
             btnInfo.setText("Chưa đăng nhập!");
         }

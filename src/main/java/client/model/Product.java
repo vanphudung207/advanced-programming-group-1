@@ -1,32 +1,34 @@
 package client.model;
 
-// Lớp Product đóng vai trò như một cái khuôn (Khuôn mẫu dữ liệu)
-// Bạn làm Database sẽ lấy dữ liệu từ SQL và đổ vào khuôn này, sau đó gửi cho Giao diện
 public class Product {
+    private String id;
+    private String name;
+    private double currentBid;
+    private String timeRemaining;
+    private String imagePath;
     
-    // Các thuộc tính cơ bản của một món hàng đấu giá
-    private String id;              // Mã sản phẩm (để sau này bấm vào còn biết là đang xem cái nào)
-    private String name;            // Tên sản phẩm hiển thị trên thẻ
-    private double currentBid;      // Giá cao nhất hiện tại (Ví dụ: 950.0)
-    private String timeRemaining;   // Thời gian còn lại (Ví dụ: "1h 15m")
-    private String imagePath;       // Đường dẫn tới bức ảnh của sản phẩm
+    // =========================================================
+    // MỚI THÊM: Biến lưu tên tài khoản của người đã đăng món hàng này
+    // =========================================================
+    private String sellerUsername; 
 
-    // Hàm khởi tạo (Constructor) dùng để tạo ra một sản phẩm mới với đầy đủ thông tin
-    public Product(String id, String name, double currentBid, String timeRemaining, String imagePath) {
+    // Cập nhật lại Hàm khởi tạo (Thêm tham số sellerUsername ở cuối)
+    public Product(String id, String name, double currentBid, String timeRemaining, String imagePath, String sellerUsername) {
         this.id = id;
         this.name = name;
         this.currentBid = currentBid;
         this.timeRemaining = timeRemaining;
         this.imagePath = imagePath;
+        this.sellerUsername = sellerUsername; // Gắn mác người bán
     }
 
-    // =========================================================
-    // CÁC HÀM GETTER: Dùng để lấy thông tin ra vẽ lên giao diện
-    // (Bắt buộc phải có vì các biến ở trên đang để chế độ private bảo mật)
-    // =========================================================
+    // Các hàm Getter để lấy dữ liệu ra
     public String getId() { return id; }
     public String getName() { return name; }
     public double getCurrentBid() { return currentBid; }
     public String getTimeRemaining() { return timeRemaining; }
     public String getImagePath() { return imagePath; }
+    
+    // Hàm mới để lấy ra tên người bán
+    public String getSellerUsername() { return sellerUsername; } 
 }

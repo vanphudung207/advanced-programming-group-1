@@ -8,6 +8,8 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert; // MỚI THÊM: Import Alert gốc
+import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.PasswordField;
@@ -20,20 +22,14 @@ import java.io.IOException;
 public class RegisterController {
 
     @FXML private StackPane rootPane; // Khung nền để làm hiệu ứng
-
-    // === Đã xóa biến fx:id="txtFullName" tại đây ===
-
     @FXML private TextField txtUsername;
     @FXML private PasswordField txtPassword;
     @FXML private PasswordField txtConfirmPassword;
-    @FXML private ComboBox<String> cbRole;
     @FXML private Button btnRegister;
+    @FXML private TextField txtPhone; // Biến nối với ô nhập Số điện thoại trên giao diện
 
     @FXML
     public void initialize() {
-        // Khởi tạo ComboBox
-        cbRole.getItems().addAll("Bidder", "Seller");
-        cbRole.setValue("Bidder");
 
         // Hiệu ứng mờ dần (Fade In) sang chảnh lúc mở màn hình
         FadeTransition fadeIn = new FadeTransition(Duration.millis(1000), rootPane);
@@ -45,34 +41,48 @@ public class RegisterController {
     @FXML
     private void handleRegisterAction(ActionEvent event) {
         
-        // === Đã xóa dòng lấy dữ liệu txtFullName.getText() tại đây ===
-
-        // Bước 1: Lấy dữ liệu từ các ô còn lại
+        // Bước 1: Lấy dữ liệu từ các ô
         String username = txtUsername.getText();
         String password = txtPassword.getText();
         String confirmPassword = txtConfirmPassword.getText();
-        String role = cbRole.getValue(); 
+        String phone = txtPhone.getText();
 
-        // Bước 2: Kiểm tra mật khẩu khớp nhau
+        // 2. Kiểm tra điều kiện nhập liệu (Không được để trống)
+        if (username.isEmpty() || password.isEmpty() || confirmPassword.isEmpty() || phone.isEmpty()) {
+            showAlert(AlertType.WARNING, "Lỗi", "Vui lòng nhập đầy đủ thông tin (Kể cả số điện thoại)!");
+            return;
+        }
+
+        // 3. Kiểm tra mật khẩu khớp nhau
         if (!password.equals(confirmPassword)) {
-            System.out.println("Error: Verification password does not match!");
+            // Đã sửa lại thành hiển thị Popup thay vì chỉ in ra Console
+            showAlert(AlertType.WARNING, "Lỗi", "Mật khẩu xác nhận không khớp!");
             return; 
         }
 
         System.out.println("--- PROCESSING REGISTRATION ---");
-        // === Đã xóa phần in 'Họ tên' ra Console ===
-        System.out.println("Username: " + username + " | Role: " + role);
+        System.out.println("Username: " + username + " | Phone: " + phone);
 
-        // Bước 3: Lưu vào file text thông qua MockDatabase
-        MockDatabase.saveUser(username, password);
-        System.out.println("=> Account created successfully: " + username);
-        
-        // Bước 4: Chuyển sang màn hình Đăng nhập
-        this.switchToLogin(event);
-        
-    } // Kết thúc hàm đăng ký
+        // 4. Gọi hàm MockDatabase ĐÃ NÂNG CẤP (truyền 3 tham số)
+        boolean isSuccess = MockDatabase.registerUser(username, password, phone);
 
-    // Hàm chuyển trang dùng chung
+        // 5. Kiểm tra kết quả ghi file
+        if (isSuccess) {
+            showAlert(AlertType.INFORMATION, "Thành công", "Đăng ký thành công! Hãy quay lại trang Đăng nhập.");
+            System.out.println("=> Account created successfully: " + username);
+            
+            // Chuyển sang màn hình Đăng nhập
+            this.switchToLogin(event);
+        } else {
+            // Nếu hàm trả về false tức là tài khoản đã tồn tại
+            showAlert(AlertType.ERROR, "Lỗi", "Tên tài khoản này đã tồn tại!");
+            System.out.println("=> Account creation failed: Username exists.");
+        }
+    } 
+
+    // ==============================================================
+    // HÀM CHUYỂN TRANG ĐĂNG NHẬP
+    // ==============================================================
     @FXML
     private void switchToLogin(ActionEvent event) {
         try {
@@ -80,7 +90,6 @@ public class RegisterController {
             Parent loginRoot = loader.load();
             Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
             
-            // Nhớ tăng kích thước Scene lên (ví dụ 600x550) để không bị che mất nút bấm nhé
             stage.setScene(new Scene(loginRoot, 600, 550));
             stage.setTitle("Online Auction System - Login");
             
@@ -88,6 +97,17 @@ public class RegisterController {
             e.printStackTrace(); 
             System.out.println("Error: Could not load Login screen!");
         }
+    }
+
+    // ==============================================================
+    // HÀM HỖ TRỢ: HIỂN THỊ POPUP THÔNG BÁO (Bắt buộc phải có)
+    // ==============================================================
+    private void showAlert(AlertType type, String title, String content) {
+        Alert alert = new Alert(type);
+        alert.setTitle(title);
+        alert.setHeaderText(null); 
+        alert.setContentText(content);
+        alert.showAndWait(); 
     }
 
 } // Kết thúc class

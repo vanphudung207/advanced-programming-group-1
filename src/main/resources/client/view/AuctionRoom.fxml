@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ListView?>
@@ -9,6 +8,7 @@
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.geometry.Insets?>
 
 <BorderPane prefHeight="650.0" prefWidth="900.0" style="-fx-background-color: #ecf0f1;" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="client.controller.AuctionRoomController">
    
@@ -46,7 +46,7 @@
                      </children>
                   </HBox>
                   
-                  <Label fx:id="lblTimer" style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #2980b9; -fx-background-color: #ebf5fb; -fx-padding: 10px 20px; -fx-background-radius: 5px;" text="⏱ Còn lại: Đang tính..." />
+                  <Label fx:id="lblTimer" style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #2980b9; -fx-background-color: #ebf5fb; -fx-padding: 10px 20px; -fx-background-radius: 5px;" text="⏱ Còn lại: 01:15:00" />
                </children>
             </VBox>
 
@@ -58,7 +58,7 @@
                   
                   <HBox spacing="10.0">
                      <children>
-                        <TextField fx:id="txtBidAmount" promptText="Nhập mức giá bạn muốn trả ($)..." style="-fx-padding: 12px; -fx-font-size: 14px; -fx-background-radius: 5px; -fx-border-color: #bdc3c7; -fx-border-radius: 5px;" HBox.hgrow="ALWAYS" />
+                        <TextField fx:id="txtBidAmount" promptText="Nhập mức giá bạn muốn trả (VNĐ)..." style="-fx-padding: 12px; -fx-font-size: 14px; -fx-background-radius: 5px; -fx-border-color: #bdc3c7; -fx-border-radius: 5px;" HBox.hgrow="ALWAYS" />
                         
                         <Button fx:id="btnSubmitBid" onAction="#handleBidAction" mnemonicParsing="false" style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 14px; -fx-padding: 12px 30px; -fx-background-radius: 5px; -fx-cursor: hand;" text="GỬI GIÁ BÁN" />
                      </children>
