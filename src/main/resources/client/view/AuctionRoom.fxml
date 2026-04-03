@@ -60,7 +60,7 @@
                      <children>
                         <TextField fx:id="txtBidAmount" promptText="Nhập mức giá bạn muốn trả (VNĐ)..." style="-fx-padding: 12px; -fx-font-size: 14px; -fx-background-radius: 5px; -fx-border-color: #bdc3c7; -fx-border-radius: 5px;" HBox.hgrow="ALWAYS" />
                         
-                        <Button fx:id="btnSubmitBid" onAction="#handleBidAction" mnemonicParsing="false" style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 14px; -fx-padding: 12px 30px; -fx-background-radius: 5px; -fx-cursor: hand;" text="GỬI GIÁ BÁN" />
+                        <Button fx:id="btnSubmitBid" defaultButton="true" onAction="#handleBidAction" mnemonicParsing="false" style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 14px; -fx-padding: 12px 30px; -fx-background-radius: 5px; -fx-cursor: hand;" text="GỬI GIÁ BÁN" />
                      </children>
                   </HBox>
                </children>

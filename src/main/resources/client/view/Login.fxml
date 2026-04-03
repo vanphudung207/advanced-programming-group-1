@@ -25,7 +25,7 @@
 
         <PasswordField fx:id="txtPassword" promptText="Enter password..."/>
 
-        <Button fx:id="btnLogin" text="Login" onAction="#handleLoginAction"/>
+        <Button fx:id="btnLogin" text="Login" onAction="#handleLoginAction" defaultButton="true"/>
 
         <Hyperlink text="Don't have an account? Register now!" 
                    onAction="#switchToRegister" 

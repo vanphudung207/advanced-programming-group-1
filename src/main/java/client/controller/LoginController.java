@@ -5,13 +5,13 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
-// Import StackPane thay cho VBox
+import javafx.scene.control.Alert; // MỚI THÊM: Import Alert để tạo thông báo
+import javafx.scene.control.Alert.AlertType;
 import javafx.scene.layout.StackPane; 
 import javafx.util.Duration;
 
 public class LoginController {
 
-    // CHÚ Ý: Đã đổi thành StackPane để khớp với file Login.fxml mới
     @FXML
     private StackPane rootPane; 
 
@@ -32,28 +32,23 @@ public class LoginController {
         String enteredUsername = txtUsername.getText(); 
         String enteredPassword = txtPassword.getText(); 
 
-        
         if (MockDatabase.checkLogin(enteredUsername, enteredPassword)) {
-            // Đăng nhập đúng thì lưu tên vào biến tạm để màn hình sau còn biết ai đang đăng nhập
+            // Đăng nhập đúng thì lưu tên vào biến tạm
             MockDatabase.registeredUsername = enteredUsername; 
             
             System.out.println("Login successful! Transitioning to the home screen...");
             
-            // Code chuyển sang màn hình Danh sách sản phẩm (ProductList.fxml)
             try {
                 javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(getClass().getResource("/client/view/ProductList.fxml"));
                 javafx.scene.Parent root = loader.load();
                 javafx.stage.Stage stage = (javafx.stage.Stage) ((javafx.scene.Node) event.getSource()).getScene().getWindow();
-                stage.setScene(new javafx.scene.Scene(root, 900, 650)); // Kích thước to đùng để chứa nhiều hàng
-
-                stage.setResizable(true);// Dòng này cho phép bạn dùng chuột kéo thả các góc để thay đổi kích thước tự do
-
-                // Đảm bảo cửa sổ không bao giờ bị kéo nhỏ hơn 800x600
-                stage.setMinWidth(800);
-                stage.setMinHeight(600);
-
-                stage.setMaximized(true);
-                stage.centerOnScreen(); // Đẩy cửa sổ ra giữa màn hình máy tính
+                
+                // ==============================================================
+                // ĐÃ SỬA: Áp dụng CÔNG THỨC VÀNG (Thay ruột giữ vỏ)
+                // ==============================================================
+                stage.getScene().setRoot(root);
+                stage.setTitle("Online Auction System - Danh sách sản phẩm"); 
+                
             } 
             catch (Exception e) {
                 e.printStackTrace();
@@ -61,20 +56,37 @@ public class LoginController {
         } 
         else {
             System.out.println("Login failed! Incorrect username or password.");
+            // ĐÃ NÂNG CẤP: Hiển thị bảng thông báo lỗi chuyên nghiệp
+            showAlert(AlertType.ERROR, "Đăng nhập thất bại", "Sai tên tài khoản hoặc mật khẩu! Vui lòng thử lại.");
         }
     }
 
     @FXML
-    private void switchToRegister(javafx.event.ActionEvent event) {
+    private void switchToRegister(ActionEvent event) {
         try {
             javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(getClass().getResource("/client/view/Register.fxml"));
             javafx.scene.Parent registerRoot = loader.load();
             javafx.stage.Stage stage = (javafx.stage.Stage) ((javafx.scene.Node) event.getSource()).getScene().getWindow();
             
-            stage.setScene(new javafx.scene.Scene(registerRoot, 600, 550));
+            // ==============================================================
+            // ĐÃ SỬA: Áp dụng CÔNG THỨC VÀNG (Thay ruột giữ vỏ)
+            // ==============================================================
+            stage.getScene().setRoot(registerRoot);
             stage.setTitle("Online Auction System - Register");
+            
         } catch (java.io.IOException e) {
             e.printStackTrace();
         }
+    }
+
+    // ==============================================================
+    // HÀM HỖ TRỢ: HIỂN THỊ POPUP THÔNG BÁO
+    // ==============================================================
+    private void showAlert(AlertType type, String title, String content) {
+        Alert alert = new Alert(type);
+        alert.setTitle(title);
+        alert.setHeaderText(null); 
+        alert.setContentText(content);
+        alert.showAndWait(); 
     }
 }

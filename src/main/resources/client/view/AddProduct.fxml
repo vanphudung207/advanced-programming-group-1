@@ -63,8 +63,17 @@
 
             <VBox spacing="5.0">
                <children>
-                  <Label style="-fx-font-weight: bold;" text="Ngày kết thúc *" />
-                  <DatePicker fx:id="dpEndDate" maxWidth="Infinity" style="-fx-padding: 5px;" />
+                  <Label style="-fx-font-weight: bold; -fx-text-fill: #2c3e50;" text="Ngày và Giờ kết thúc *" />
+                  <HBox alignment="CENTER_LEFT" spacing="10.0">
+                     <children>
+                        <DatePicker fx:id="dpEndDate" promptText="Chọn ngày..." style="-fx-padding: 5px; -fx-background-radius: 5px; -fx-border-color: #bdc3c7; -fx-border-radius: 5px;" HBox.hgrow="ALWAYS" />
+                        
+                        <ComboBox fx:id="cbHour" prefWidth="80.0" promptText="Giờ" style="-fx-background-color: white; -fx-border-color: #bdc3c7; -fx-border-radius: 5px;" />
+                        <Label style="-fx-font-weight: bold; -fx-font-size: 16px;" text=":" />
+                        
+                        <ComboBox fx:id="cbMinute" prefWidth="80.0" promptText="Phút" style="-fx-background-color: white; -fx-border-color: #bdc3c7; -fx-border-radius: 5px;" />
+                     </children>
+                  </HBox>
                </children>
             </VBox>
 

@@ -11,7 +11,6 @@ import javafx.scene.Scene;
 import javafx.scene.control.Alert; // MỚI THÊM: Import Alert gốc
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
-import javafx.scene.control.ComboBox;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.StackPane;
@@ -30,7 +29,6 @@ public class RegisterController {
 
     @FXML
     public void initialize() {
-
         // Hiệu ứng mờ dần (Fade In) sang chảnh lúc mở màn hình
         FadeTransition fadeIn = new FadeTransition(Duration.millis(1000), rootPane);
         fadeIn.setFromValue(0.0);
@@ -87,10 +85,13 @@ public class RegisterController {
     private void switchToLogin(ActionEvent event) {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/client/view/Login.fxml"));
-            Parent loginRoot = loader.load();
-            Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+            Parent loginRoot = loader.load(); // Biến tên là loginRoot
             
-            stage.setScene(new Scene(loginRoot, 600, 550));
+            Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow(); 
+            
+            // ĐÃ SỬA: Dùng đúng tên biến loginRoot
+            stage.getScene().setRoot(loginRoot); 
+            
             stage.setTitle("Online Auction System - Login");
             
         } catch (IOException e) {

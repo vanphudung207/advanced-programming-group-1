@@ -33,6 +33,7 @@ public class MainApp extends Application {
         primaryStage.setResizable(false); // Tạm khóa tính năng kéo giãn cửa sổ để form không bị xô lệch
         
         // 5. Hiển thị cửa sổ lên màn hình
+        primaryStage.setMaximized(true);
         primaryStage.show();
     }
 

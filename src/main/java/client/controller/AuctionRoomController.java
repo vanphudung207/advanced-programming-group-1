@@ -151,10 +151,8 @@ public class AuctionRoomController { // Bắt đầu khai báo class Controller
             Parent root = loader.load(); 
             
             Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow(); 
-            
-            stage.setScene(new Scene(root, 900, 650)); 
-            stage.setMaximized(true); 
-            stage.setTitle("Online Auction System - Danh sách sản phẩm"); 
+            stage.getScene().setRoot(root); 
+            stage.setTitle("Online Auction System - Danh sách sản phẩm");
             
         } catch (Exception e) { 
             e.printStackTrace(); 
