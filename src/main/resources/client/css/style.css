@@ -55,3 +55,44 @@
 .form-box .label {
     -fx-text-fill: white;
 }
+```css
+.overlay-pane { /* Lớp nền che phủ toàn bộ màn hình khi có thông báo */
+    -fx-background-color: rgba(0, 0, 0, 0.6); /* Nền đen mờ với độ trong suốt 60% giúp tập trung vào thông báo */
+} /* Kết thúc overlay-pane */
+
+.notification-box { /* Định dạng khối hộp thông báo ở giữa */
+    -fx-background-color: linear-gradient(to bottom right, #ffffff, #fdfbfb); /* Nền màu trắng sáng có hiệu ứng chuyển màu gradient nhẹ */
+    -fx-padding: 40px; /* Căn lề trong 40px cho rộng rãi, thoáng đãng */
+    -fx-background-radius: 20px; /* Bo góc tròn mạnh 20px tạo sự mềm mại hiện đại */
+    -fx-border-color: #F59E0B; /* Viền khung màu vàng kim (màu của chiến thắng/giải thưởng) */
+    -fx-border-width: 4px; /* Độ dày của viền vàng là 4px */
+    -fx-border-radius: 18px; /* Bo góc viền khớp với góc của nền */
+    -fx-effect: dropshadow(three-pass-box, rgba(245, 158, 11, 0.4), 30, 0, 0, 10); /* Đổ bóng màu vàng rực tỏa ra xung quanh khung */
+} /* Kết thúc notification-box */
+
+.noti-title { /* Định dạng dòng chữ tiêu đề "KẾT THÚC ĐẤU GIÁ" */
+    -fx-font-size: 28px; /* Kích thước chữ rất to 28px */
+    -fx-font-weight: bold; /* In đậm chữ */
+    -fx-text-fill: #D97706; /* Màu chữ cam đậm/vàng kim nổi bật */
+} /* Kết thúc noti-title */
+
+.noti-message { /* Định dạng dòng chữ nội dung chi tiết người thắng */
+    -fx-font-size: 18px; /* Cỡ chữ 18px dễ đọc */
+    -fx-text-fill: #374151; /* Màu chữ xám đậm, không bị chói mắt */
+    -fx-font-weight: bold; /* In đậm để nhấn mạnh người chiến thắng */
+} /* Kết thúc noti-message */
+
+.btn-close-noti { /* Định dạng nút đóng thông báo */
+    -fx-font-size: 14px; /* Cỡ chữ 14px vừa vặn */
+    -fx-font-weight: bold; /* In đậm chữ trong nút */
+    -fx-text-fill: white; /* Chữ màu trắng */
+    -fx-background-color: #EF4444; /* Nền nút màu đỏ báo hiệu hành động đóng/thoát */
+    -fx-padding: 10px 20px; /* Lề trên/dưới 10px, lề trái/phải 20px */
+    -fx-background-radius: 8px; /* Bo góc nút 8px */
+    -fx-cursor: hand; /* Đổi con trỏ chuột thành hình bàn tay */
+    -fx-translate-y: 10px; /* Đẩy nút dịch xuống dưới một chút để cách xa chữ */
+} /* Kết thúc btn-close-noti */
+
+.btn-close-noti:hover { /* Hiệu ứng khi lướt chuột qua nút đóng */
+    -fx-background-color: #DC2626; /* Chuyển sang màu đỏ sậm hơn */
+} /* Kết thúc hiệu ứng hover nút đóng */
