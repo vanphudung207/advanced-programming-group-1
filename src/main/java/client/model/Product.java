@@ -6,29 +6,40 @@ public class Product {
     private double currentBid;
     private String timeRemaining;
     private String imagePath;
-    
-    // =========================================================
-    // MỚI THÊM: Biến lưu tên tài khoản của người đã đăng món hàng này
-    // =========================================================
-    private String sellerUsername; 
+    private String sellerUsername; // Người bán
+    private String category;       // Danh mục sản phẩm (Điện tử, Gia dụng...)
 
-    // Cập nhật lại Hàm khởi tạo (Thêm tham số sellerUsername ở cuối)
-    public Product(String id, String name, double currentBid, String timeRemaining, String imagePath, String sellerUsername) {
+    // =========================================================
+    // CONSTRUCTOR 1: Hàm khởi tạo ĐẦY ĐỦ (Dùng khi tạo sản phẩm mới)
+    // =========================================================
+    public Product(String id, String name, double currentBid, String timeRemaining, String imagePath, String sellerUsername, String category) {
         this.id = id;
         this.name = name;
         this.currentBid = currentBid;
         this.timeRemaining = timeRemaining;
         this.imagePath = imagePath;
-        this.sellerUsername = sellerUsername; // Gắn mác người bán
+        this.sellerUsername = sellerUsername; 
+        this.category = category; 
     }
 
-    // Các hàm Getter để lấy dữ liệu ra
+    // =========================================================
+    // CONSTRUCTOR 2: Hàm khởi tạo RÚT GỌN (Giữ lại để code cũ không bị lỗi)
+    // Nếu ai đó không truyền danh mục vào, hệ thống tự hiểu là "Khác"
+    // =========================================================
+    public Product(String id, String name, double currentBid, String timeRemaining, String imagePath, String sellerUsername) {
+        this(id, name, currentBid, timeRemaining, imagePath, sellerUsername, "Khác");
+    }
+
+    // =========================================================
+    // CÁC HÀM GETTER ĐỂ LẤY DỮ LIỆU RA
+    // =========================================================
     public String getId() { return id; }
     public String getName() { return name; }
     public double getCurrentBid() { return currentBid; }
     public String getTimeRemaining() { return timeRemaining; }
     public String getImagePath() { return imagePath; }
-    
-    // Hàm mới để lấy ra tên người bán
     public String getSellerUsername() { return sellerUsername; } 
+    
+    // ĐÃ THÊM: Hàm lấy tên danh mục để làm chức năng bộ lọc
+    public String getCategory() { return category; } 
 }

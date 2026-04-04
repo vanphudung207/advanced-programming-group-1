@@ -45,17 +45,36 @@ public class ProductListController {
         clock.setCycleCount(Animation.INDEFINITE); 
         clock.play(); 
 
-        // 2. GỌI HÀM VẼ SẢN PHẨM LÊN MÀN HÌNH
-        loadProductsToGrid();
+        // 2. GỌI HÀM VẼ SẢN PHẨM LÊN MÀN HÌNH (ĐÃ SỬA: Truyền toàn bộ danh sách vào lúc mới mở app)
+        loadProductsToGrid(MockDatabase.getAllProducts());
     }
 
     // ==============================================================
-    // HÀM TẢI VÀ VẼ DANH SÁCH SẢN PHẨM LÊN LƯỚI
+    // (MỚI THÊM) HÀM XỬ LÝ KHI BẤM VÀO CÁC NÚT DANH MỤC
     // ==============================================================
-    private void loadProductsToGrid() {
-        productContainer.getChildren().clear();
-        List<Product> products = MockDatabase.getAllProducts();
+    @FXML
+    private void handleFilterCategory(javafx.event.ActionEvent event) {
+        // Lấy nút vừa bấm
+        Button clickedButton = (Button) event.getSource();
+        // Lấy chữ trên nút (Điện tử, Gia dụng...)
+        String categoryName = clickedButton.getText();
+        
+        // Nhờ Database lọc sản phẩm
+        List<Product> filteredProducts = MockDatabase.getProductsByCategory(categoryName);
+        
+        // Vẽ lại lưới với danh sách mới
+        loadProductsToGrid(filteredProducts);
+        
+        System.out.println("Đã lọc danh mục: " + categoryName + " (Tìm thấy " + filteredProducts.size() + " SP)");
+    }
 
+    // ==============================================================
+    // HÀM TẢI VÀ VẼ DANH SÁCH SẢN PHẨM LÊN LƯỚI (ĐÃ SỬA LỖI NGOẶC NHỌN)
+    // ==============================================================
+    private void loadProductsToGrid(List<Product> products) {
+        productContainer.getChildren().clear();
+        
+        // Vòng lặp bây giờ đã nằm gọn gàng bên trong hàm
         for (Product p : products) {
             
             VBox card = new VBox(10); 
@@ -117,9 +136,6 @@ public class ProductListController {
             btnBid.setOnMouseEntered(e -> btnBid.setStyle(btnHover));
             btnBid.setOnMouseExited(e -> btnBid.setStyle(btnNormal));
             
-            // ==============================================================
-            // ĐÃ SỬA: CHUYỂN SANG PHÒNG ĐẤU GIÁ (Áp dụng Công thức Vàng)
-            // ==============================================================
             btnBid.setOnAction(event -> {
                 try {
                     javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(getClass().getResource("/client/view/AuctionRoom.fxml"));
@@ -130,7 +146,6 @@ public class ProductListController {
                     
                     javafx.stage.Stage stage = (javafx.stage.Stage) ((javafx.scene.Node) event.getSource()).getScene().getWindow();
                     
-                    // Lột vỏ thay ruột
                     stage.getScene().setRoot(auctionRoot);
                     stage.setTitle("Auction Room - " + p.getName());
                     
@@ -145,7 +160,7 @@ public class ProductListController {
     }
 
     // ==============================================================
-    // ĐÃ SỬA: HÀM XỬ LÝ ĐĂNG XUẤT (Áp dụng Công thức Vàng)
+    // HÀM XỬ LÝ ĐĂNG XUẤT
     // ==============================================================
     @FXML
     private void handleLogoutAction(javafx.event.ActionEvent event) {
@@ -155,7 +170,6 @@ public class ProductListController {
             javafx.scene.Parent loginRoot = loader.load();
             javafx.stage.Stage stage = (javafx.stage.Stage) productContainer.getScene().getWindow();
             
-            // Lột vỏ thay ruột
             stage.getScene().setRoot(loginRoot);
             stage.setTitle("Online Auction System - Login");
             
@@ -183,7 +197,7 @@ public class ProductListController {
     }
 
     // ==============================================================
-    // ĐÃ SỬA: HÀM CHUYỂN SANG TRANG "ĐĂNG SẢN PHẨM" (Áp dụng Công thức Vàng)
+    // HÀM CHUYỂN SANG TRANG "ĐĂNG SẢN PHẨM"
     // ==============================================================
     @FXML
     private void handleGoToAddProduct(javafx.event.ActionEvent event) {
@@ -192,7 +206,6 @@ public class ProductListController {
             javafx.scene.Parent addProductRoot = loader.load();
             javafx.stage.Stage stage = (javafx.stage.Stage) ((javafx.scene.Node) event.getSource()).getScene().getWindow();
             
-            // Lột vỏ thay ruột
             stage.getScene().setRoot(addProductRoot);
             stage.setTitle("Online Auction System - Add Product");
             
