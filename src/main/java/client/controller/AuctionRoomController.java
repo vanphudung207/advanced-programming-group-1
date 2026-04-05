@@ -3,6 +3,7 @@ package client.controller; // Khai báo thư mục chứa file controller này
 import client.model.Product; // Nhúng class Product để lấy thông tin sản phẩm
 import javafx.animation.KeyFrame; // Nhúng KeyFrame để tạo khung thời gian cho đồng hồ
 import javafx.animation.Timeline; // Nhúng Timeline để tạo vòng lặp đếm ngược
+import javafx.application.Platform; // Xử lý an toàn các Popup để tránh kẹt luồng
 import javafx.event.ActionEvent; // Nhúng ActionEvent để bắt sự kiện click nút
 import javafx.fxml.FXML; // Nhúng FXML để liên kết với giao diện Scene Builder
 import javafx.scene.control.Button; // Nhúng class Button để điều khiển nút bấm
@@ -23,10 +24,8 @@ import javafx.geometry.Pos; // Nhúng thư viện căn chỉnh vị trí
 import javafx.scene.effect.DropShadow; // Nhúng hiệu ứng đổ bóng cho giao diện
 import javafx.scene.layout.VBox; // Nhúng layout xếp dọc để vẽ Popup
 import javafx.scene.paint.Color; // Nhúng bảng màu
-import javafx.stage.Modality; // Nhúng thư viện khóa màn hình (buộc người dùng phải tương tác với popup)
-import javafx.stage.StageStyle; // Nhúng thư viện xóa viền cửa sổ mặc định của Windows
-import javafx.scene.control.Alert;
-import javafx.scene.control.Alert.AlertType; // Nhúng AlertType để chọn kiểu hộp thoại (Lỗi, Cảnh báo, Thông tin...)
+import javafx.stage.Modality; // Nhúng thư viện khóa màn hình
+import javafx.stage.StageStyle; // Nhúng thư viện xóa viền cửa sổ mặc định
 
 public class AuctionRoomController { // Bắt đầu khai báo class Controller
 
@@ -38,35 +37,32 @@ public class AuctionRoomController { // Bắt đầu khai báo class Controller
     @FXML private Button btnSubmitBid; 
     @FXML private ListView<String> listBidHistory; 
     
-    // Khai báo các thành phần giao diện liên quan đến thông tin chi tiết
     @FXML private Label lblSellerName; // Nhãn hiển thị tên người đăng bán
     @FXML private Label lblProductDescription; // Nhãn hiển thị mô tả sản phẩm
-    
-    // MỚI THÊM: Khai báo biến điều khiển nút xem chi tiết để tạo hiệu ứng hover
-    @FXML private Button btnShowDetails; 
+    @FXML private Button btnShowDetails; // Biến điều khiển nút xem chi tiết
 
     private Product currentProduct; 
     private int totalSeconds = 60; 
     private Timeline countdownTimer; 
+    
+    // Biến cờ đánh dấu xem đã có ai tham gia trả giá chưa (Mặc định luôn là CHƯA CÓ)
+    private boolean hasBids = false; 
 
     // =================================================================================
     // HÀM NHẬN DỮ LIỆU TỪ MÀN HÌNH DANH SÁCH CHUYỂN SANG
     // =================================================================================
     public void setProductData(Product product) { 
         this.currentProduct = product; 
+        this.hasBids = false; // Đảm bảo mỗi khi load sản phẩm mới, cờ luôn được reset về false
         
         if (currentProduct != null) { 
             lblProductName.setText(currentProduct.getName()); 
             lblCurrentPrice.setText(String.format("%,.0f VNĐ", currentProduct.getCurrentBid()));
 
-            // HIỂN THỊ THÔNG TIN NGƯỜI BÁN VÀ MÔ TẢ LÊN GIAO DIỆN
             if (lblSellerName != null) {
-                lblSellerName.setText(currentProduct.getSellerUsername()); // Cập nhật tên người bán
+                lblSellerName.setText(currentProduct.getSellerUsername());
             }
-            
             if (lblProductDescription != null) {
-                // TẠM THỜI ẨN GỌI HÀM getDescription() ĐỂ TRÁNH LỖI BUILD
-                // Đợi khi nào team (người làm Product) thêm mô tả vào database thì bạn mở lại sau
                 lblProductDescription.setText("Thông tin mô tả sẽ được cập nhật sớm..."); 
             }
 
@@ -77,26 +73,20 @@ public class AuctionRoomController { // Bắt đầu khai báo class Controller
                 System.out.println("Lỗi không thể tải ảnh: " + e.getMessage()); 
             }
             
-            // =================================================================================
-            // THUẬT TOÁN NHẬN DIỆN NGƯỜI MUA / NGƯỜI BÁN (Contextual Roles)
-            // =================================================================================
-            String currentUser = MockDatabase.registeredUsername; // Lấy tên người đang đăng nhập
-            String sellerUser = currentProduct.getSellerUsername(); // Lấy tên người sở hữu món hàng
+            // XỬ LÝ PHÂN QUYỀN
+            // Đổi chữ "nguoimua123" thành tên của bạn để test giao diện chủ hàng.
+            String currentUser = "nguoimua123"; 
             
-            // So sánh: Nếu đang đăng nhập và tên trùng với tên chủ hàng
+            String sellerUser = currentProduct.getSellerUsername(); 
+            
             if (currentUser != null && currentUser.equals(sellerUser)) {
                 listBidHistory.getItems().add("Hệ thống: Bạn là chủ sở hữu của món hàng này.");
-                
-                // Khóa quyền đấu giá
                 btnSubmitBid.setDisable(true); 
                 txtBidAmount.setDisable(true); 
                 txtBidAmount.setPromptText("Bạn không thể tự đấu giá hàng của mình");
-                
             } else {
-                // Nếu là người mua bình thường
                 listBidHistory.getItems().add("Hệ thống: Bắt đầu phiên đấu giá!"); 
             }
-            // =================================================================================
 
             startCountdownTimer(); 
         } 
@@ -106,7 +96,6 @@ public class AuctionRoomController { // Bắt đầu khai báo class Controller
     // HÀM XỬ LÝ ĐỒNG HỒ ĐẾM NGƯỢC
     // =================================================================================
     private void startCountdownTimer() { 
-
         updateTimerDisplay(); 
         countdownTimer = new Timeline(new KeyFrame(Duration.seconds(1), event -> { 
             totalSeconds--; 
@@ -114,21 +103,7 @@ public class AuctionRoomController { // Bắt đầu khai báo class Controller
             
             if (totalSeconds <= 0) { 
                 countdownTimer.stop(); 
-                lblTimer.setText("Phiên đấu giá đã đóng!"); 
-                btnSubmitBid.setDisable(true); 
-                txtBidAmount.setDisable(true); 
-                
-                double winningPrice = currentProduct.getCurrentBid(); 
-                String formattedVND = formatVND(winningPrice);
-                
-                // MOCK DATA: Tạo một cái tên giả lập chờ Thành viên 1 & 2 ghép code Server vào
-                // Note cho team: Chỗ này ae lấy tên user thắng cuộc từ DB / Socket truyền vào biến này nhé!
-                String mockWinnerName = "Người chơi hệ VIP"; 
-                
-                listBidHistory.getItems().add(0, "Hệ thống: " + mockWinnerName + " đã thắng với giá " + formattedVND); 
-                
-                // Truyền cả 3 thông tin: Tên SP, Giá tiền, và Tên người thắng vào Popup
-                showWinnerPopup(currentProduct.getName(), formattedVND, mockWinnerName);
+                endAuction(); // Hết giờ thì gọi hàm kết thúc
             }
         })); 
         
@@ -137,18 +112,53 @@ public class AuctionRoomController { // Bắt đầu khai báo class Controller
     } 
 
     // =================================================================================
-    // HÀM PHỤ TRỢ: TÍNH TOÁN & HIỂN THỊ THỜI GIAN
+    // HÀM XỬ LÝ KẾT THÚC ĐẤU GIÁ
     // =================================================================================
-    private void updateTimerDisplay() {
-        int hours = totalSeconds / 3600; 
-        int minutes = (totalSeconds % 3600) / 60; 
-        int seconds = totalSeconds % 60; 
+    private void endAuction() {
+        lblTimer.setText("Đã đóng!"); 
+        txtBidAmount.setDisable(true); 
+        btnSubmitBid.setDisable(true); 
         
-        lblTimer.setText(String.format("⏱ Còn lại: %02d:%02d:%02d", hours, minutes, seconds)); 
+        // NẾU KHÔNG CÓ AI TRẢ GIÁ TRONG SUỐT PHIÊN
+        if (!hasBids) {
+            listBidHistory.getItems().add(0, "Hệ thống: Phiên đấu giá đã kết thúc và không có ai trả giá.");
+            
+            Platform.runLater(() -> {
+                showNoWinnerPopup(); 
+            });
+            
+            return; 
+        }
+
+        // NẾU CÓ NGƯỜI TRẢ GIÁ THÌ XỬ LÝ NHƯ BÌNH THƯỜNG
+        String winnerName = "Nguyễn Văn A"; 
+        String winnerPhone = "0987.654.321"; 
+        String winnerEmail = "nguyenvana@gmail.com"; 
+
+        double winningPrice = currentProduct.getCurrentBid(); 
+        String formattedVND = formatVND(winningPrice);
+
+        listBidHistory.getItems().add(0, "Hệ thống: " + winnerName + " đã thắng với giá " + formattedVND);
+        
+        boolean checkSeller = false;
+        if (currentProduct != null) {
+            String currentUser = "nguoimua123"; 
+            
+            String sellerUser = currentProduct.getSellerUsername(); 
+            if (currentUser != null && currentUser.equals(sellerUser)) {
+                checkSeller = true; 
+            }
+        }
+        
+        final boolean isSellerToPass = checkSeller;
+
+        Platform.runLater(() -> {
+            showWinnerPopup(winnerName, formattedVND, winnerPhone, winnerEmail, isSellerToPass);
+        });
     }
 
     // =================================================================================
-    // HÀM XỬ LÝ KHI NGƯỜI DÙNG BẤM NÚT "GỬI GIÁ BÁN" (Đã thêm Anti-sniping)
+    // HÀM XỬ LÝ KHI NGƯỜI DÙNG BẤM NÚT "GỬI GIÁ BÁN" 
     // =================================================================================
     @FXML private void handleBidAction(ActionEvent event) { 
         String inputStr = txtBidAmount.getText(); 
@@ -158,28 +168,25 @@ public class AuctionRoomController { // Bắt đầu khai báo class Controller
             double currentHighestBid = currentProduct.getCurrentBid(); 
             
             if (bidAmount <= currentHighestBid) { 
-                // Đổi cảnh báo $ thành VNĐ
-                listBidHistory.getItems().add(0, "Lỗi: Bạn phải trả giá cao hơn " + String.format("%,.0f VNĐ", currentHighestBid)); 
+                listBidHistory.getItems().add(0, "Lỗi: Bạn phải trả giá cao hơn " + formatVND(currentHighestBid)); 
                 return; 
             } 
             
+            // XÁC NHẬN CÓ NGƯỜI TRẢ GIÁ HỢP LỆ THÌ MỚI BẬT CỜ TRUE
+            hasBids = true; 
+            
             currentProduct = new Product(currentProduct.getId(), currentProduct.getName(), bidAmount, currentProduct.getTimeRemaining(), currentProduct.getImagePath(), currentProduct.getSellerUsername()); 
             
-            // Đổi text cập nhật giá thành VNĐ
-            lblCurrentPrice.setText(String.format("%,.0f VNĐ", bidAmount)); 
-            listBidHistory.getItems().add(0, "Bạn trả giá: " + String.format("%,.0f VNĐ", bidAmount)); 
+            lblCurrentPrice.setText(formatVND(bidAmount)); 
+            listBidHistory.getItems().add(0, "Bạn trả giá: " + formatVND(bidAmount)); 
             txtBidAmount.clear(); 
             
-            // =================================================================================
-            // TÍNH NĂNG NÂNG CAO: ANTI-SNIPING (+1.5đ)
-            // =================================================================================
-            // Nếu người dùng trả giá hợp lệ khi thời gian còn lại từ 1 đến 10 giây
+            // ANTI-SNIPING (+1.5đ)
             if (totalSeconds > 0 && totalSeconds <= 10) { 
-                totalSeconds += 10; // Cộng thêm 10 giây vào tổng thời gian còn lại
-                listBidHistory.getItems().add(0, "🔥 Anti-sniping kích hoạt: Thời gian được cộng thêm 10s!"); // Thông báo lên lịch sử
-                updateTimerDisplay(); // Cập nhật lại nhãn đồng hồ hiển thị ngay lập tức
+                totalSeconds += 10; 
+                listBidHistory.getItems().add(0, "🔥 Anti-sniping kích hoạt: Thời gian được cộng thêm 10s!"); 
+                updateTimerDisplay(); 
             }
-            // =================================================================================
             
         } catch (NumberFormatException e) { 
             listBidHistory.getItems().add(0, "Lỗi: Vui lòng nhập số tiền hợp lệ!"); 
@@ -187,47 +194,34 @@ public class AuctionRoomController { // Bắt đầu khai báo class Controller
     } 
 
     // =================================================================================
-    // HÀM XỬ LÝ KHI BẤM NÚT "QUAY LẠI TRANG CHỦ"
+    // HÀM PHỤ TRỢ: TÍNH TOÁN & HIỂN THỊ THỜI GIAN
     // =================================================================================
-    @FXML 
-    private void handleGoBack(ActionEvent event) { 
-        try { 
-            
-            if (countdownTimer != null) { 
-                countdownTimer.stop(); 
-            } 
-            
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/client/view/ProductList.fxml")); 
-            Parent root = loader.load(); 
-            
-            Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow(); 
-            stage.getScene().setRoot(root); 
-            stage.setTitle("Online Auction System - Danh sách sản phẩm");
-            
-        } catch (Exception e) { 
-            e.printStackTrace(); 
-        } 
-    } 
+    private void updateTimerDisplay() {
+        int hours = totalSeconds / 3600; 
+        int minutes = (totalSeconds % 3600) / 60; 
+        int seconds = totalSeconds % 60; 
+        lblTimer.setText(String.format("⏱ Còn lại: %02d:%02d:%02d", hours, minutes, seconds)); 
+    }
+
     // =================================================================================
     // HÀM PHỤ TRỢ: CHUYỂN ĐỔI SỐ THỰC SANG TIỀN TỆ VNĐ
     // =================================================================================
     private String formatVND(double amount) {
-        Locale vietnamLocale = new Locale("vi", "VN"); // Cài đặt vùng quốc gia là Việt Nam
-        NumberFormat vnFormat = NumberFormat.getCurrencyInstance(vietnamLocale); // Lấy bộ formater tiền tệ chuẩn của VN
-        return vnFormat.format(amount); // Trả về chuỗi đã được định dạng đẹp mắt
+        Locale vietnamLocale = new Locale("vi", "VN"); 
+        NumberFormat vnFormat = NumberFormat.getCurrencyInstance(vietnamLocale); 
+        return vnFormat.format(amount); 
     }
 
     // =================================================================================
-    // HÀM PHỤ TRỢ: VẼ CỬA SỔ POPUP VINH DANH NGƯỜI CHIẾN THẮNG
+    // HÀM VẼ CỬA SỔ POPUP VINH DANH NGƯỜI CHIẾN THẮNG
     // =================================================================================
-    private void showWinnerPopup(String productName, String formattedPrice, String winnerName) { // Bổ sung thêm biến winnerName
+    private void showWinnerPopup(String winnerName, String formattedPrice, String winnerPhone, String winnerEmail, boolean isSeller) { 
         Stage popupStage = new Stage(); 
         popupStage.initModality(Modality.APPLICATION_MODAL); 
         popupStage.initStyle(StageStyle.TRANSPARENT); 
 
-        VBox popupBox = new VBox(15); // Đổi khoảng cách các dòng lại cho vừa vặn hơn
+        VBox popupBox = new VBox(15); 
         popupBox.setAlignment(Pos.CENTER); 
-        // Đổi viền sang màu vàng gold cho đúng chất "Vô địch"
         popupBox.setStyle("-fx-background-color: white; -fx-padding: 40; -fx-background-radius: 15; -fx-border-radius: 15; -fx-border-color: #f1c40f; -fx-border-width: 4;");
 
         DropShadow shadow = new DropShadow();
@@ -237,80 +231,146 @@ public class AuctionRoomController { // Bắt đầu khai báo class Controller
         Label lblTitle = new Label("🏆 KẾT THÚC PHIÊN ĐẤU GIÁ!");
         lblTitle.setStyle("-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: #f39c12;"); 
 
-        Label lblProduct = new Label("Sản phẩm: " + productName);
+        String pName = (currentProduct != null) ? currentProduct.getName() : "Sản phẩm";
+        Label lblProduct = new Label("Sản phẩm: " + pName);
         lblProduct.setStyle("-fx-font-size: 18px; -fx-text-fill: #34495e;"); 
 
-        // Thêm nhãn xướng tên người chiến thắng
         Label lblWinner = new Label("Người chiến thắng: " + winnerName);
-        lblWinner.setStyle("-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #27ae60;"); // Màu xanh lá cây nổi bật
+        lblWinner.setStyle("-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #27ae60;"); 
 
         Label lblPrice = new Label("Với mức giá: " + formattedPrice);
         lblPrice.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #e74c3c;"); 
+        
+        popupBox.getChildren().addAll(lblTitle, lblProduct, lblWinner, lblPrice);
+
+        if (isSeller) {
+            VBox contactBox = new VBox(5);
+            contactBox.setAlignment(Pos.CENTER);
+            contactBox.setStyle("-fx-background-color: #fdf2e9; -fx-padding: 15; -fx-background-radius: 8; -fx-border-color: #e67e22; -fx-border-radius: 8;");
+            
+            Label lblContactTitle = new Label("THÔNG TIN LIÊN HỆ NGƯỜI MUA:");
+            lblContactTitle.setStyle("-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #d35400;");
+            Label lblPhone = new Label("📞 SĐT: " + winnerPhone);
+            lblPhone.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;");
+            Label lblEmailInfo = new Label("📧 Email: " + winnerEmail);
+            lblEmailInfo.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;");
+            
+            contactBox.getChildren().addAll(lblContactTitle, lblPhone, lblEmailInfo);
+            popupBox.getChildren().add(contactBox);
+        } else {
+            Label lblHidden = new Label("🔒 Thông tin liên lạc đã được bảo mật.\n(Chỉ người đăng bán mới có thể xem thông tin này)");
+            lblHidden.setStyle("-fx-font-size: 13px; -fx-text-fill: #7f8c8d; -fx-font-style: italic; -fx-text-alignment: center;");
+            popupBox.getChildren().add(lblHidden);
+        }
 
         Button btnClose = new Button("XÁC NHẬN");
-        btnClose.setStyle("-fx-background-color: #2980b9; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 14px; -fx-padding: 10 30; -fx-background-radius: 5; -fx-cursor: hand;");
+        btnClose.setStyle("-fx-background-color: #2980b9; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 14px; -fx-padding: 10 30; -fx-background-radius: 5; -fx-cursor: hand; -fx-translate-y: 10;");
         btnClose.setOnAction(e -> popupStage.close()); 
 
-        // Ráp thêm lblWinner vào danh sách hiển thị
-        popupBox.getChildren().addAll(lblTitle, lblProduct, lblWinner, lblPrice, btnClose);
+        popupBox.getChildren().add(btnClose);
 
         Scene scene = new Scene(popupBox);
         scene.setFill(Color.TRANSPARENT); 
         popupStage.setScene(scene);
-        
         popupStage.centerOnScreen();
         popupStage.showAndWait();
     }
+
+    // =================================================================================
+    // HÀM MỚI: VẼ CỬA SỔ POPUP KHI KHÔNG CÓ AI TRẢ GIÁ
+    // =================================================================================
+    private void showNoWinnerPopup() { 
+        Stage popupStage = new Stage(); 
+        popupStage.initModality(Modality.APPLICATION_MODAL); 
+        popupStage.initStyle(StageStyle.TRANSPARENT); 
+
+        VBox popupBox = new VBox(15); 
+        popupBox.setAlignment(Pos.CENTER); 
+        // Viền màu xám xịt báo hiệu sự thất bại/hủy bỏ
+        popupBox.setStyle("-fx-background-color: white; -fx-padding: 40; -fx-background-radius: 15; -fx-border-radius: 15; -fx-border-color: #95a5a6; -fx-border-width: 4;");
+
+        DropShadow shadow = new DropShadow();
+        shadow.setColor(Color.rgb(0, 0, 0, 0.25)); 
+        popupBox.setEffect(shadow);
+
+        Label lblTitle = new Label("PHIÊN ĐẤU GIÁ ĐÃ KẾT THÚC");
+        lblTitle.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #7f8c8d;"); 
+
+        String pName = (currentProduct != null) ? currentProduct.getName() : "Sản phẩm";
+        Label lblProduct = new Label("Sản phẩm: " + pName);
+        lblProduct.setStyle("-fx-font-size: 18px; -fx-text-fill: #34495e;"); 
+
+        Label lblNoWinner = new Label("Không có ai trả giá.");
+        lblNoWinner.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #e74c3c;"); 
+
+        Button btnClose = new Button("ĐÓNG");
+        btnClose.setStyle("-fx-background-color: #7f8c8d; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 14px; -fx-padding: 10 30; -fx-background-radius: 5; -fx-cursor: hand; -fx-translate-y: 10;");
+        btnClose.setOnAction(e -> popupStage.close()); 
+
+        popupBox.getChildren().addAll(lblTitle, lblProduct, lblNoWinner, btnClose);
+
+        Scene scene = new Scene(popupBox);
+        scene.setFill(Color.TRANSPARENT); 
+        popupStage.setScene(scene);
+        popupStage.centerOnScreen();
+        popupStage.showAndWait();
+    }
+
+    // =================================================================================
+    // HÀM XỬ LÝ KHI BẤM NÚT "QUAY LẠI TRANG CHỦ"
+    // =================================================================================
+    @FXML 
+    private void handleGoBack(ActionEvent event) { 
+        try { 
+            if (countdownTimer != null) { countdownTimer.stop(); } 
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/client/view/ProductList.fxml")); 
+            Parent root = loader.load(); 
+            Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow(); 
+            stage.getScene().setRoot(root); 
+            stage.setTitle("Online Auction System - Danh sách sản phẩm");
+        } catch (Exception e) { 
+            e.printStackTrace(); 
+        } 
+    } 
 
     // =================================================================================
     // HÀM XỬ LÝ KHI BẤM NÚT "XEM ĐẦY ĐỦ CHI TIẾT"
     // =================================================================================
     @FXML 
     private void handleShowDetails(ActionEvent event) { 
-        // 1. Tạo một cửa sổ (Stage) mới để làm Popup
         Stage detailStage = new Stage(); 
-        
-        // Lệnh này bắt buộc người dùng phải đóng popup này thì mới bấm lại được vào màn hình chính
         detailStage.initModality(Modality.APPLICATION_MODAL); 
-        detailStage.setTitle("Thông tin chi tiết sản phẩm"); // Đặt tiêu đề cho cửa sổ nhỏ
+        detailStage.setTitle("Thông tin chi tiết sản phẩm"); 
 
-        // 2. Tạo bố cục (Layout) cho Popup
-        VBox layout = new VBox(15); // Tạo hộp xếp dọc, khoảng cách các dòng là 15px
-        layout.setStyle("-fx-padding: 25; -fx-background-color: #ffffff;"); // Nền trắng, lề 25px
+        VBox layout = new VBox(15); 
+        layout.setStyle("-fx-padding: 25; -fx-background-color: #ffffff;"); 
 
-        // 3. Tạo các thành phần chữ (Label) để nhét vào Popup
         Label lblTitle = new Label("CHI TIẾT SẢN PHẨM");
         lblTitle.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;");
 
-        // Lấy tên sản phẩm từ biến currentProduct (nếu có)
         String pName = (currentProduct != null) ? currentProduct.getName() : "Không có dữ liệu";
         Label lblName = new Label("Tên sản phẩm: " + pName);
         lblName.setStyle("-fx-font-size: 16px; -fx-text-fill: #34495e; -fx-font-weight: bold;");
 
-        // Lấy tên người bán
         String pSeller = (currentProduct != null) ? currentProduct.getSellerUsername() : "Không có dữ liệu";
         Label lblSeller = new Label("Người đăng bán: " + pSeller);
-        lblSeller.setStyle("-fx-font-size: 16px; -fx-text-fill: #e67e22;"); // Tên người bán màu cam
+        lblSeller.setStyle("-fx-font-size: 16px; -fx-text-fill: #e67e22;"); 
 
-        // Tạm thời để text cứng cho mô tả vì team chưa làm hàm getDescription()
         Label lblDesc = new Label("Mô tả đầy đủ:\nHiện tại người bán chưa cung cấp thêm thông tin chi tiết nào khác cho sản phẩm này.");
         lblDesc.setStyle("-fx-font-size: 15px; -fx-text-fill: #7f8c8d; -fx-line-spacing: 5px;");
-        lblDesc.setWrapText(true); // Tự động xuống dòng nếu văn bản dài
+        lblDesc.setWrapText(true); 
 
-        // 4. Tạo nút "Đóng"
         Button btnClose = new Button("ĐÓNG");
         btnClose.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 20; -fx-cursor: hand;");
-        btnClose.setOnAction(e -> detailStage.close()); // Khi bấm nút này thì đóng cửa sổ (Stage) hiện tại lại
+        btnClose.setOnAction(e -> detailStage.close()); 
 
-        // 5. Gom tất cả các thành phần trên nhét vào layout
         layout.getChildren().addAll(lblTitle, lblName, lblSeller, lblDesc, btnClose);
-        layout.setAlignment(Pos.TOP_LEFT); // Căn lề trên bên trái
+        layout.setAlignment(Pos.TOP_LEFT); 
 
-        // 6. Hiển thị Popup
-        Scene scene = new Scene(layout, 450, 350); // Thiết lập kích thước cửa sổ popup là 450x350
+        Scene scene = new Scene(layout, 450, 350); 
         detailStage.setScene(scene);
-        detailStage.centerOnScreen(); // Cho cửa sổ bật ra ở chính giữa màn hình
-        detailStage.showAndWait(); // Hiển thị màn hình xem chi tiết
+        detailStage.centerOnScreen(); 
+        detailStage.showAndWait(); 
     }
     
     // =================================================================================
@@ -318,7 +378,6 @@ public class AuctionRoomController { // Bắt đầu khai báo class Controller
     // =================================================================================
     @FXML 
     private void handleMouseEnter() { 
-        // Khi chuột lướt vào: Nền chuyển xanh đậm hơn (#2980b9) và thêm hiệu ứng bóng đổ tỏa ra (dropshadow)
         if (btnShowDetails != null) {
             btnShowDetails.setStyle("-fx-background-color: #2980b9; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8px 15px; -fx-background-radius: 5px; -fx-cursor: hand; -fx-effect: dropshadow(three-pass-box, rgba(41, 128, 185, 0.8), 15, 0, 0, 5);");
         }
@@ -326,7 +385,6 @@ public class AuctionRoomController { // Bắt đầu khai báo class Controller
 
     @FXML 
     private void handleMouseExit() { 
-        // Khi chuột rời đi: Trả lại màu nền mặc định ban đầu (#3498db) và bỏ bóng đổ
         if (btnShowDetails != null) {
             btnShowDetails.setStyle("-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8px 15px; -fx-background-radius: 5px; -fx-cursor: hand;");
         }
