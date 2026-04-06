@@ -134,4 +134,28 @@ public class MockDatabase {
         
         return "Chưa cập nhật"; 
     }
+
+    // ==============================================================
+    // HÀM TÌM KIẾM SẢN PHẨM THEO TỪ KHÓA
+    // ==============================================================
+    public static List<Product> searchProducts(String keyword) {
+        // 1. Tạo một cái túi rỗng để chứa các sản phẩm tìm thấy
+        List<Product> result = new ArrayList<>();
+        
+        // 2. Chuyển từ khóa của người dùng thành chữ thường hết (Ví dụ: "iPhOne" -> "iphone") 
+        // Mục đích để tìm kiếm không bị phân biệt hoa/thường, chuẩn trải nghiệm người dùng
+        String lowerKeyword = keyword.toLowerCase();
+
+        // 3. Quét qua tất cả sản phẩm đang có trên sàn
+        for (Product p : getAllProducts()) {
+            // Lấy tên sản phẩm đổi sang chữ thường, rồi xem nó có chứa từ khóa không
+            if (p.getName().toLowerCase().contains(lowerKeyword)) {
+                // Nếu khớp, nhét ngay sản phẩm này vào túi kết quả
+                result.add(p); 
+            }
+        }
+        
+        // 4. Trả túi kết quả về cho giao diện hiển thị
+        return result; 
+    }
 }
