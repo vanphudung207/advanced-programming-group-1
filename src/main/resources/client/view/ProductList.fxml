@@ -74,7 +74,7 @@
                </children>
             </HBox>
 
-            <HBox alignment="CENTER" style="-fx-background-color: #f8f9fa; -fx-border-color: #bdc3c7; -fx-border-width: 1px 0 2px 0; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 5, 0, 0, 2);">
+            <HBox fx:id="categoryBox" alignment="CENTER" style="-fx-background-color: #f8f9fa; -fx-border-color: #bdc3c7; -fx-border-width: 1px 0 2px 0; -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 5, 0, 0, 2);">
                <children>
                   <Button maxWidth="Infinity" mnemonicParsing="false" onAction="#handleFilterCategory" style="-fx-background-color: transparent; -fx-text-fill: #e64a19; -fx-font-size: 15px; -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 12px; -fx-border-color: #bdc3c7; -fx-border-width: 0 1px 0 0;" text="Tất cả sản phẩm" HBox.hgrow="ALWAYS" />
                   <Button maxWidth="Infinity" mnemonicParsing="false" onAction="#handleFilterCategory" style="-fx-background-color: transparent; -fx-text-fill: #2c3e50; -fx-font-size: 15px; -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 12px; -fx-border-color: #bdc3c7; -fx-border-width: 0 1px 0 0;" text="Điện tử" HBox.hgrow="ALWAYS" />
@@ -89,14 +89,15 @@
    </top>
 
    <center>
-        <ScrollPane fitToWidth="true" style="-fx-background-color: #ecf0f1; -fx-border-color: transparent;">
-            <VBox alignment="TOP_CENTER" spacing="20.0" style="-fx-padding: 20px; -fx-background-color: #ecf0f1;">
+        <ScrollPane fitToWidth="true" fitToHeight="true" style="-fx-background-color: #ecf0f1; -fx-border-color: transparent;">
+            
+            <VBox alignment="TOP_CENTER" spacing="20.0" minHeight="700.0" style="-fx-padding: 20px 20px 80px 20px; -fx-background-color: #ecf0f1;">
                 <children>
                     
                     <HBox alignment="CENTER" spacing="10.0">
                         <children>
                             <TextField prefWidth="500.0" promptText="🔍 Bạn muốn đấu giá món hàng nào hôm nay?..." style="-fx-padding: 12px 20px; -fx-font-size: 15px; -fx-background-radius: 25px; -fx-border-color: #bdc3c7; -fx-border-radius: 25px; -fx-background-color: white;" />
-                            <Button mnemonicParsing="false" style="-fx-background-color: #2c3e50; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 15px; -fx-padding: 12px 25px; -fx-background-radius: 25px; -fx-cursor: hand;" text="Tìm kiếm" />
+                            <Button fx:id="btnSearch" mnemonicParsing="false" style="-fx-background-color: #2c3e50; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 15px; -fx-padding: 12px 25px; -fx-background-radius: 25px; -fx-cursor: hand;" text="Tìm kiếm" />
                         </children>
                     </HBox>
 
@@ -108,12 +109,53 @@
     </center>
 
    <bottom>
-        <HBox alignment="CENTER" spacing="30.0" style="-fx-background-color: #e0e0e0; -fx-padding: 15px;">
-            <Label text="About Us" style="-fx-cursor: hand;"/>
-            <Label text="Support" style="-fx-cursor: hand;"/>
-            <Label text="Contact" style="-fx-cursor: hand;"/>
-            <Label text="Terms &amp; Conditions" style="-fx-cursor: hand;"/>
-        </HBox>
+        <VBox style="-fx-background-color: #34495e; -fx-padding: 30px 40px 15px 40px;">
+            <children>
+                
+                <HBox spacing="50.0" alignment="CENTER_LEFT">
+                    <children>
+                        
+                        <VBox spacing="10.0" HBox.hgrow="ALWAYS">
+                            <children>
+                                <Label text="HỆ THỐNG ĐẤU GIÁ GROUP 1" style="-fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 16px;" />
+                                <Label text="📍 Địa chỉ: 144 Xuân Thủy, Cầu Giấy, Hà Nội" style="-fx-text-fill: #bdc3c7;" />
+                                <Label text="📞 Hotline: 0902 203 741 (Hỗ trợ 24/7)" style="-fx-text-fill: #bdc3c7;" />
+                                <Label text="✉️ Email: dungvanphu97@gmail.com" style="-fx-text-fill: #bdc3c7;" />
+                            </children>
+                        </VBox>
+
+                        <VBox spacing="10.0" HBox.hgrow="ALWAYS">
+                            <children>
+                                <Label text="VỀ CHÚNG TÔI" style="-fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 16px;" />
+                                <Label text="➤ Giới thiệu về sàn đấu giá" style="-fx-text-fill: #bdc3c7; -fx-cursor: hand;" />
+                                <Label text="➤ Quy chế hoạt động" style="-fx-text-fill: #bdc3c7; -fx-cursor: hand;" />
+                                <Label text="➤ Chính sách bảo mật" style="-fx-text-fill: #bdc3c7; -fx-cursor: hand;" />
+                            </children>
+                        </VBox>
+
+                        <VBox spacing="10.0" HBox.hgrow="ALWAYS">
+                            <children>
+                                <Label text="HỖ TRỢ KHÁCH HÀNG" style="-fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 16px;" />
+                                <Label text="➤ Hướng dẫn nạp/rút tiền" style="-fx-text-fill: #bdc3c7; -fx-cursor: hand;" />
+                                <Label text="➤ Quy trình giải quyết khiếu nại" style="-fx-text-fill: #bdc3c7; -fx-cursor: hand;" />
+                                <Label text="➤ Câu hỏi thường gặp (FAQ)" style="-fx-text-fill: #bdc3c7; -fx-cursor: hand;" />
+                            </children>
+                        </VBox>
+                        
+                    </children>
+                </HBox>
+
+                <VBox alignment="CENTER" style="-fx-padding: 20px 0 0 0; -fx-border-color: #7f8c8d; -fx-border-width: 1px 0 0 0;">
+                    <VBox.margin>
+                        <Insets top="20.0" />
+                    </VBox.margin>
+                    <children>
+                        <Label text="© 2026 Bản quyền thuộc về Nhóm 1. All rights reserved." style="-fx-text-fill: #95a5a6; -fx-font-size: 12px;" />
+                    </children>
+                </VBox>
+                
+            </children>
+        </VBox>
     </bottom>
 
 </BorderPane>
