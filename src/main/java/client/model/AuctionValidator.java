@@ -2,6 +2,7 @@ package client.model;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Map;
 
 public class AuctionValidator {
 
@@ -21,15 +22,8 @@ public class AuctionValidator {
     // Is the auction still open?
     // =============================================
     public static boolean isAuctionOpen(AuctionItem item) {
-        if (item.isClosed()) return false;
-        try {
-            LocalDateTime end = LocalDateTime.parse(item.getEndTime(),
-                DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"));
-            return LocalDateTime.now().isBefore(end);
-        } catch (Exception e) {
-            System.err.println("Bad endTime format for item: " + item.getId());
-            return false;
-        }
+    if (item.isClosed()) return false;
+    return System.currentTimeMillis() < item.getEndTime();
     }
 
     // =============================================
@@ -57,11 +51,8 @@ public class AuctionValidator {
     // =============================================
     public static String placeBid(String itemId, String bidderUsername, double bidAmount) {
         // Load current data
-        java.util.List<AuctionItem> items = DataManager.loadItems();
-        AuctionItem target = null;
-        for (AuctionItem item : items) {
-            if (item.getId().equals(itemId)) { target = item; break; }
-        }
+        Map<String, AuctionItem> items = DataManager.loadItems();
+        AuctionItem target = items.get(itemId);
 
         if (target == null)           return "Sản phẩm không tồn tại!";
         if (!isAuctionOpen(target))   return "Phiên đấu giá đã kết thúc!";

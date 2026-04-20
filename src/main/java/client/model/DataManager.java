@@ -3,7 +3,8 @@ package client.model;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
-
+import java.util.Map;
+import java.util.HashMap;
 import java.io.*;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -32,12 +33,25 @@ public class DataManager {
     // =============================================
     // AUCTION ITEMS
     // =============================================
-    public static List<AuctionItem> loadItems() {
-        return loadList(ITEMS_FILE, new TypeToken<List<AuctionItem>>(){}.getType());
+    public static Map<String, AuctionItem> loadItems() {
+    File file = new File(ITEMS_FILE);
+        if (!file.exists()) return new HashMap<>();
+        try (Reader reader = new FileReader(file)) {
+            Type type = new TypeToken<Map<String, AuctionItem>>(){}.getType();
+            Map<String, AuctionItem> result = gson.fromJson(reader, type);
+            return result != null ? result : new HashMap<>();
+        } catch (IOException e) {
+            return new HashMap<>();
+        }
     }
 
-    public static void saveItems(List<AuctionItem> items) {
-        saveList(ITEMS_FILE, items);
+    public static void saveItems(Map<String, AuctionItem> items) {
+        new File("data").mkdirs();
+        try (Writer writer = new FileWriter(ITEMS_FILE)) {
+            gson.toJson(items, writer);
+        } catch (IOException e) {
+            System.err.println("Write error: " + e.getMessage());
+        }
     }
 
     // =============================================

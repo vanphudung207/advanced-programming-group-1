@@ -14,7 +14,7 @@ public class AuctionItem {
     private double currentBid;
     private double stepPrice;        // minimum raise per bid
 
-    private String endTime;          // ISO format: "2025-06-01T23:59:00"
+    private long endTime;          // ISO format: "2025-06-01T23:59:00"
     private boolean closed = false;
 
     public AuctionItem() {}
@@ -22,7 +22,7 @@ public class AuctionItem {
     public AuctionItem(String id, String name, String description,
                        String category, String imagePath,
                        String sellerUsername, double startPrice,
-                       double stepPrice, String endTime) {
+                       double stepPrice, long endTime) {
         this.id = id;
         this.name = name;
         this.description = description;
@@ -44,7 +44,7 @@ public class AuctionItem {
     public double getStartPrice() { return startPrice; }
     public double getCurrentBid() { return currentBid; }
     public double getStepPrice() { return stepPrice; }
-    public String getEndTime() { return endTime; }
+    public long getEndTime() { return endTime; }
     public boolean isClosed() { return closed; }
     public void setCurrentBid(double currentBid) { this.currentBid = currentBid; }
     public void setClosed(boolean closed) { this.closed = closed; }
