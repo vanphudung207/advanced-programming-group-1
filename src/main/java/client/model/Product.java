@@ -11,6 +11,7 @@ public class Product {
     private String highestBidder = null;
     private String highestBidderPhone = null;
     private String highestBidderEmail = null;
+    private double stepPrice;
     // =========================================================
     // CONSTRUCTOR 1: Hàm khởi tạo ĐẦY ĐỦ (Dùng khi tạo sản phẩm mới)
     // =========================================================
@@ -22,6 +23,7 @@ public class Product {
         this.imagePath = imagePath;
         this.sellerUsername = sellerUsername; 
         this.category = category; 
+        this.stepPrice=stepPrice;
     }
 
     // =========================================================
@@ -31,7 +33,8 @@ public class Product {
     public Product(String id, String name, double currentBid, String timeRemaining, String imagePath, String sellerUsername) {
         this(id, name, currentBid, timeRemaining, imagePath, sellerUsername, "Khác");
     }
-
+    //set currentBid
+    public void setCurrentBid(double currentBid) {this.currentBid = currentBid;}
     // =========================================================
     // CÁC HÀM GETTER ĐỂ LẤY DỮ LIỆU RA
     // =========================================================
@@ -41,6 +44,7 @@ public class Product {
     public String getTimeRemaining() { return timeRemaining; }
     public String getImagePath() { return imagePath; }
     public String getSellerUsername() { return sellerUsername; } 
+    public double getStepPrice() {return stepPrice;}
     
     // ĐÃ THÊM: Hàm lấy tên danh mục để làm chức năng bộ lọc
     public String getCategory() { return category; }
