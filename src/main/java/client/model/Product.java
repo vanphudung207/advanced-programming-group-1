@@ -8,7 +8,10 @@ public class Product {
     private String imagePath;
     private String sellerUsername; // Người bán
     private String category;       // Danh mục sản phẩm (Điện tử, Gia dụng...)
-
+    private String highestBidder = null;
+    private String highestBidderPhone = null;
+    private String highestBidderEmail = null;
+    private double stepPrice;
     // =========================================================
     // CONSTRUCTOR 1: Hàm khởi tạo ĐẦY ĐỦ (Dùng khi tạo sản phẩm mới)
     // =========================================================
@@ -20,6 +23,7 @@ public class Product {
         this.imagePath = imagePath;
         this.sellerUsername = sellerUsername; 
         this.category = category; 
+        this.stepPrice=stepPrice;
     }
 
     // =========================================================
@@ -29,7 +33,8 @@ public class Product {
     public Product(String id, String name, double currentBid, String timeRemaining, String imagePath, String sellerUsername) {
         this(id, name, currentBid, timeRemaining, imagePath, sellerUsername, "Khác");
     }
-
+    //set currentBid
+    public void setCurrentBid(double currentBid) {this.currentBid = currentBid;}
     // =========================================================
     // CÁC HÀM GETTER ĐỂ LẤY DỮ LIỆU RA
     // =========================================================
@@ -39,7 +44,15 @@ public class Product {
     public String getTimeRemaining() { return timeRemaining; }
     public String getImagePath() { return imagePath; }
     public String getSellerUsername() { return sellerUsername; } 
+    public double getStepPrice() {return stepPrice;}
     
     // ĐÃ THÊM: Hàm lấy tên danh mục để làm chức năng bộ lọc
-    public String getCategory() { return category; } 
+    public String getCategory() { return category; }
+
+    public String getHighestBidder() { return highestBidder; }
+    public String getHighestBidderPhone() { return highestBidderPhone; }
+    public void setHighestBidder(String highestBidder) { this.highestBidder = highestBidder; }
+    public void setHighestBidderPhone(String highestBidderPhone) { this.highestBidderPhone = highestBidderPhone; }
+    public String getHighestBidderEmail() { return highestBidderEmail; }
+    public void setHighestBidderEmail(String highestBidderEmail) { this.highestBidderEmail = highestBidderEmail; }
 }

@@ -1,5 +1,6 @@
 package client.controller; // Khai báo thư mục chứa file controller này
 
+import client.model.AuctionValidator;
 import client.model.Product; // Nhúng class Product để lấy thông tin sản phẩm
 import javafx.animation.KeyFrame; // Nhúng KeyFrame để tạo khung thời gian cho đồng hồ
 import javafx.animation.Timeline; // Nhúng Timeline để tạo vòng lặp đếm ngược
@@ -131,9 +132,9 @@ public class AuctionRoomController { // Bắt đầu khai báo class Controller
         }
 
         // NẾU CÓ NGƯỜI TRẢ GIÁ THÌ XỬ LÝ NHƯ BÌNH THƯỜNG
-        String winnerName = "Nguyễn Văn A"; 
-        String winnerPhone = "0987.654.321"; 
-        String winnerEmail = "nguyenvana@gmail.com"; 
+        String winnerName = currentProduct.getHighestBidder();
+        String winnerPhone = currentProduct.getHighestBidderPhone();
+        String winnerEmail = currentProduct.getHighestBidderEmail();
 
         double winningPrice = currentProduct.getCurrentBid(); 
         String formattedVND = formatVND(winningPrice);
@@ -165,21 +166,19 @@ public class AuctionRoomController { // Bắt đầu khai báo class Controller
         
         try { 
             double bidAmount = Double.parseDouble(inputStr); 
-            double currentHighestBid = currentProduct.getCurrentBid(); 
-            
-            if (bidAmount <= currentHighestBid) { 
-                listBidHistory.getItems().add(0, "Lỗi: Bạn phải trả giá cao hơn " + formatVND(currentHighestBid)); 
-                return; 
-            } 
-            
-            // XÁC NHẬN CÓ NGƯỜI TRẢ GIÁ HỢP LỆ THÌ MỚI BẬT CỜ TRUE
-            hasBids = true; 
-            
-            currentProduct = new Product(currentProduct.getId(), currentProduct.getName(), bidAmount, currentProduct.getTimeRemaining(), currentProduct.getImagePath(), currentProduct.getSellerUsername()); 
-            
-            lblCurrentPrice.setText(formatVND(bidAmount)); 
-            listBidHistory.getItems().add(0, "Bạn trả giá: " + formatVND(bidAmount)); 
-            txtBidAmount.clear(); 
+            String result = AuctionValidator.placeBid(
+                currentProduct.getId(),
+                MockDatabase.registeredUsername,
+                Double.parseDouble(txtBidAmount.getText())
+            );
+
+            if (result.startsWith("OK:")) {
+                listBidHistory.getItems().add(0, MockDatabase.registeredUsername + " đặt: " + result.substring(3));
+                lblCurrentPrice.setText(result.substring(3));
+            } else {
+                // show result as error message
+                listBidHistory.getItems().add(0, "Lỗi: " + result);
+            }
             
             // ANTI-SNIPING (+1.5đ)
             if (totalSeconds > 0 && totalSeconds <= 10) { 
