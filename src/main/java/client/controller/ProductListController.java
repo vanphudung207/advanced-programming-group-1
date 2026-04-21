@@ -240,8 +240,8 @@ public class ProductListController {
             Label statusBadge = new Label();
             String time = p.getTimeRemaining().toLowerCase(); 
             
-            // Định vị Nhãn Trạng Thái
-            if (time.equals("0") || time.contains("kết thúc") || time.contains("hết")) {
+            // THUẬT TOÁN ĐỊNH VỊ TRẠNG THÁI (ĐÃ FIX LỖI BẮT NHẦM TỪ KHÓA)
+            if (time.equals("0") || time.contains("đã kết thúc") || time.contains("hết")) {
                 statusBadge.setText("⚫ ĐÃ KẾT THÚC");
                 statusBadge.setStyle("-fx-background-color: #7f8c8d; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 10px; -fx-padding: 4px 8px; -fx-background-radius: 5px;");
             } else if (!time.contains("h") && !time.contains("d")) {
