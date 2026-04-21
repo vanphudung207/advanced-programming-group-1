@@ -16,6 +16,7 @@ public class FirebaseConfig {
 
             FirebaseOptions options = FirebaseOptions.builder()
                 .setCredentials(GoogleCredentials.fromStream(serviceAccount))
+                .setDatabaseUrl("https://advanced-programming-group-1-default-rtdb.asia-southeast1.firebasedatabase.app/")
                 .build();
 
             FirebaseApp.initializeApp(options);

@@ -168,12 +168,12 @@ public class AuctionRoomController { // Bắt đầu khai báo class Controller
             double bidAmount = Double.parseDouble(inputStr); 
             String result = AuctionValidator.placeBid(
                 currentProduct.getId(),
-                MockDatabase.registeredUsername,
+                client.service.FirebaseService.registeredUsername,
                 Double.parseDouble(txtBidAmount.getText())
             );
 
             if (result.startsWith("OK:")) {
-                listBidHistory.getItems().add(0, MockDatabase.registeredUsername + " đặt: " + result.substring(3));
+                listBidHistory.getItems().add(0, client.service.FirebaseService.registeredUsername + " đặt: " + result.substring(3));
                 lblCurrentPrice.setText(result.substring(3));
             } else {
                 // show result as error message

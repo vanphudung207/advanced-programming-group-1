@@ -60,7 +60,7 @@ public class ProductListController {
         }
 
         // 3. Tải toàn bộ sản phẩm từ DB lên và lưu vào Trí nhớ ngắn hạn
-        currentDisplayedProducts = MockDatabase.getAllProducts();
+        currentDisplayedProducts = client.service.FirebaseService.getAllProducts();
         // Gọi hàm vẽ lưới để hiển thị danh sách đó ra màn hình
         loadProductsToGrid(currentDisplayedProducts);
 
@@ -121,10 +121,10 @@ public class ProductListController {
         // Nếu người dùng không gõ gì mà cứ bấm nút tìm
         if (keyword.isEmpty()) {
             // Lấy lại toàn bộ kho hàng gốc
-            currentDisplayedProducts = MockDatabase.getAllProducts();
+            currentDisplayedProducts = client.service.FirebaseService.getAllProducts();
         } else {
             // Gọi điện nhờ Database giả lập đi tìm hàng giúp
-            currentDisplayedProducts = MockDatabase.searchProducts(keyword);
+            currentDisplayedProducts = client.service.FirebaseService.searchProducts(keyword);
         }
 
         // Reset hộp Sắp xếp về "Mặc định" để tránh lỗi logic khi lọc ra danh sách mới
@@ -145,7 +145,7 @@ public class ProductListController {
         String categoryName = clickedButton.getText(); 
         
         // Hỏi CSDL lấy danh sách theo loại, rồi lưu vào Trí nhớ ngắn hạn
-        currentDisplayedProducts = MockDatabase.getProductsByCategory(categoryName); 
+        currentDisplayedProducts = client.service.FirebaseService.getProductsByCategory(categoryName); 
         
         // Cập nhật lại thanh tìm kiếm cho trống và Reset sắp xếp
         txtSearch.clear();
@@ -312,7 +312,7 @@ public class ProductListController {
     @FXML
     private void handleLogoutAction(javafx.event.ActionEvent event) {
         try {
-            MockDatabase.registeredUsername = null; 
+            client.service.FirebaseService.registeredUsername = null; 
             javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(getClass().getResource("/client/view/Login.fxml"));
             javafx.scene.Parent loginRoot = loader.load();
             javafx.stage.Stage stage = (javafx.stage.Stage) productContainer.getScene().getWindow();
@@ -325,9 +325,9 @@ public class ProductListController {
 
     @FXML
     private void handleShowInfo(javafx.event.ActionEvent event) {
-        if (MockDatabase.registeredUsername != null) {
-            String username = MockDatabase.registeredUsername;
-            String phone = MockDatabase.getUserPhone(username); 
+        if (client.service.FirebaseService.registeredUsername != null) {
+            String username = client.service.FirebaseService.registeredUsername;
+            String phone = client.service.FirebaseService.getUserPhone(username); 
             btnInfo.setText("Tên TK: " + username + "\nSĐT: " + phone);
             btnInfo.setStyle("-fx-background-color: transparent; -fx-text-fill: #27ae60; -fx-font-weight: bold; -fx-cursor: default;");
         } else {

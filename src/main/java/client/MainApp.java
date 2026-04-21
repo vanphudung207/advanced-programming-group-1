@@ -15,7 +15,8 @@ public class MainApp extends Application {
     // Hàm start là điểm bắt đầu của mọi ứng dụng JavaFX (tương tự hàm main bình thường)
     @Override
     public void start(Stage primaryStage) throws Exception {
-        
+        // ĐÃ THÊM: Kết nối với máy chủ Firebase ngay khi bật App
+        client.service.FirebaseConfig.init();
         // 1. Chỉ định đường dẫn tới file thiết kế Login.fxml của bạn
         // Lưu ý: Dấu "/" ở đầu đại diện cho thư mục gốc của resources
         URL fxmlLocation = getClass().getResource("/client/view/Register.fxml");

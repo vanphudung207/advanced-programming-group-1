@@ -43,3 +43,12 @@ buildNumber.properties
 
 # Bỏ qua file rác của hệ điều hành Windows (ẩn hình ảnh thumbnail)
 Thumbs.db
+
+# ==========================================
+# 4. BẢO MẬT & THÔNG TIN NHẠY CẢM (CỰC KỲ QUAN TRỌNG)
+# ==========================================
+# Bỏ qua chìa khóa kết nối Firebase để tránh bị hacker đánh cắp toàn bộ Database
+serviceAccountKey.json
+
+# Bỏ qua các file chứa mật khẩu cơ sở dữ liệu giả lập cũ (nếu còn sót lại)
+mock_users.txt

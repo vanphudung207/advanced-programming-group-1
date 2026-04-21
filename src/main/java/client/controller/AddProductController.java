@@ -73,19 +73,19 @@ public class AddProductController {
             double startPrice = Double.parseDouble(startPriceStr);
             
             // 1. Tạo ID mới ngẫu nhiên cho sản phẩm
-            String newId = "SP0" + (MockDatabase.getAllProducts().size() + 1);
+            String newId = "SP0" + (client.service.FirebaseService.getAllProducts().size() + 1);
 
             // 2. Chắp nối Thời gian
             String timeRemaining = "Kết thúc vào: " + dpEndDate.getValue().toString() + " " + hour + ":" + minute;
 
             // 3. Lấy tên người đăng bán (Ai đang đăng nhập thì lấy tên người đó)
-            String seller = (MockDatabase.registeredUsername != null) ? MockDatabase.registeredUsername : "Khách vãng lai";
+            String seller = (client.service.FirebaseService.registeredUsername != null) ? client.service.FirebaseService.registeredUsername : "Khách vãng lai";
 
             // 4. Khởi tạo cục Sản Phẩm Mới
             Product newProduct = new Product(newId, name, startPrice, timeRemaining, selectedImagePath, seller, category);
 
             // 5. Ném hàng vào Kho Database
-            MockDatabase.addProduct(newProduct);
+            client.service.FirebaseService.addProduct(newProduct);
 
             showAlert(AlertType.INFORMATION, "Thành công", "Sản phẩm của bạn đã được đưa lên sàn đấu giá!");
 

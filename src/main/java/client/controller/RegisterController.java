@@ -60,7 +60,7 @@ public class RegisterController {
         }
 
         // 4. Ghi dữ liệu
-        boolean isSuccess = MockDatabase.registerUser(username, password, phone);
+        boolean isSuccess = client.service.FirebaseService.registerUser(username, password, phone);
 
         if (isSuccess) {
             // Nếu đăng ký thành công, đổi màu chữ thành Xanh Lá cho uy tín

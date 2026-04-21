@@ -34,8 +34,8 @@ public class LoginController {
         // Reset lại chữ trống mỗi khi người dùng bấm nút mới
         lblError.setText("");
 
-        if (MockDatabase.checkLogin(enteredUsername, enteredPassword)) {
-            MockDatabase.registeredUsername = enteredUsername; 
+        if (client.service.FirebaseService.checkLogin(enteredUsername, enteredPassword)) {
+            client.service.FirebaseService.registeredUsername = enteredUsername; 
             try {
                 javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(getClass().getResource("/client/view/ProductList.fxml"));
                 javafx.scene.Parent root = loader.load();
