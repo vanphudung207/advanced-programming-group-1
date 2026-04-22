@@ -1,6 +1,5 @@
 package client.controller; // Khai báo thư mục chứa file controller này
 
-import client.model.AuctionValidator;
 import client.model.Product; // Nhúng class Product để lấy thông tin sản phẩm
 import javafx.animation.KeyFrame; // Nhúng KeyFrame để tạo khung thời gian cho đồng hồ
 import javafx.animation.Timeline; // Nhúng Timeline để tạo vòng lặp đếm ngược
@@ -90,7 +89,29 @@ public class AuctionRoomController { // Bắt đầu khai báo class Controller
             }
 
             startCountdownTimer(); 
-        } 
+            
+            // =========================================================================
+            // MỚI THÊM: ÉP NẠP FILE CSS CHẮC CHẮN 100% BẰNG JAVA
+            // =========================================================================
+            Platform.runLater(() -> {
+                try {
+                    // Lấy giao diện gốc
+                    Scene scene = btnSubmitBid.getScene();
+                    if (scene != null) {
+                        // Tìm đường dẫn file CSS (Đảm bảo file nằm đúng ở src/main/resources/client/css/auction_room.css)
+                        String cssUrl = getClass().getResource("/client/css/auction_room.css").toExternalForm();
+                        
+                        // Nếu chưa có thì thêm vào
+                        if (!scene.getStylesheets().contains(cssUrl)) {
+                            scene.getStylesheets().add(cssUrl);
+                        }
+                    }
+                } catch (Exception e) {
+                    System.out.println("⚠️ CẢNH BÁO: Không tìm thấy file CSS. Hãy kiểm tra lại tên thư mục và tên file.");
+                    e.printStackTrace();
+                }
+            });
+        }
     } 
 
     // =================================================================================
@@ -132,9 +153,9 @@ public class AuctionRoomController { // Bắt đầu khai báo class Controller
         }
 
         // NẾU CÓ NGƯỜI TRẢ GIÁ THÌ XỬ LÝ NHƯ BÌNH THƯỜNG
-        String winnerName = currentProduct.getHighestBidder();
-        String winnerPhone = currentProduct.getHighestBidderPhone();
-        String winnerEmail = currentProduct.getHighestBidderEmail();
+        String winnerName = "Nguyễn Văn A"; 
+        String winnerPhone = "0987.654.321"; 
+        String winnerEmail = "nguyenvana@gmail.com"; 
 
         double winningPrice = currentProduct.getCurrentBid(); 
         String formattedVND = formatVND(winningPrice);
@@ -166,19 +187,21 @@ public class AuctionRoomController { // Bắt đầu khai báo class Controller
         
         try { 
             double bidAmount = Double.parseDouble(inputStr); 
-            String result = AuctionValidator.placeBid(
-                currentProduct.getId(),
-                client.service.FirebaseService.registeredUsername,
-                Double.parseDouble(txtBidAmount.getText())
-            );
-
-            if (result.startsWith("OK:")) {
-                listBidHistory.getItems().add(0, client.service.FirebaseService.registeredUsername + " đặt: " + result.substring(3));
-                lblCurrentPrice.setText(result.substring(3));
-            } else {
-                // show result as error message
-                listBidHistory.getItems().add(0, "Lỗi: " + result);
-            }
+            double currentHighestBid = currentProduct.getCurrentBid(); 
+            
+            if (bidAmount <= currentHighestBid) { 
+                listBidHistory.getItems().add(0, "Lỗi: Bạn phải trả giá cao hơn " + formatVND(currentHighestBid)); 
+                return; 
+            } 
+            
+            // XÁC NHẬN CÓ NGƯỜI TRẢ GIÁ HỢP LỆ THÌ MỚI BẬT CỜ TRUE
+            hasBids = true; 
+            
+            currentProduct = new Product(currentProduct.getId(), currentProduct.getName(), bidAmount, currentProduct.getTimeRemaining(), currentProduct.getImagePath(), currentProduct.getSellerUsername()); 
+            
+            lblCurrentPrice.setText(formatVND(bidAmount)); 
+            listBidHistory.getItems().add(0, "Bạn trả giá: " + formatVND(bidAmount)); 
+            txtBidAmount.clear(); 
             
             // ANTI-SNIPING (+1.5đ)
             if (totalSeconds > 0 && totalSeconds <= 10) { 
@@ -199,7 +222,7 @@ public class AuctionRoomController { // Bắt đầu khai báo class Controller
         int hours = totalSeconds / 3600; 
         int minutes = (totalSeconds % 3600) / 60; 
         int seconds = totalSeconds % 60; 
-        lblTimer.setText(String.format("⏱ Còn lại: %02d:%02d:%02d", hours, minutes, seconds)); 
+        lblTimer.setText(String.format(" Còn lại: %02d:%02d:%02d", hours, minutes, seconds)); 
     }
 
     // =================================================================================
@@ -227,7 +250,7 @@ public class AuctionRoomController { // Bắt đầu khai báo class Controller
         shadow.setColor(Color.rgb(0, 0, 0, 0.25)); 
         popupBox.setEffect(shadow);
 
-        Label lblTitle = new Label("🏆 KẾT THÚC PHIÊN ĐẤU GIÁ!");
+        Label lblTitle = new Label("KẾT THÚC PHIÊN ĐẤU GIÁ!");
         lblTitle.setStyle("-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: #f39c12;"); 
 
         String pName = (currentProduct != null) ? currentProduct.getName() : "Sản phẩm";

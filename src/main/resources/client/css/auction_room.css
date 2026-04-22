@@ -1,0 +1,181 @@
+/* src/main/resources/client/css/auction_room.css */
+/* CHỈ DÀNH RIÊNG CHO PHÒNG ĐẤU GIÁ - PHONG CÁCH AMAZON */
+
+/* Khung nền xám nhạt nhẹ nhàng */
+.main-content {
+    -fx-background-color: #f2f4f8; 
+}
+
+/* Thanh Header (Xanh than Amazon) */
+.header-bar {
+    -fx-background-color: #232f3e;
+}
+
+.header-title {
+    -fx-text-fill: white;
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+}
+
+.btn-back {
+    -fx-background-color: transparent;
+    -fx-text-fill: white;
+    -fx-border-color: white;
+    -fx-border-radius: 4px;
+    -fx-padding: 6px 12px;
+    -fx-cursor: hand;
+}
+.btn-back:hover {
+    -fx-background-color: rgba(255,255,255,0.1);
+}
+
+/* Thanh Tìm kiếm trên Header */
+.search-box-container {
+    -fx-background-color: white;
+    -fx-background-radius: 4px;
+}
+.search-input {
+    -fx-background-color: transparent;
+    -fx-border-width: 0;
+    -fx-padding: 8px;
+}
+.search-input:focused {
+    -fx-background-color: transparent;
+}
+.btn-search {
+    -fx-background-color: #febd69; 
+    -fx-background-radius: 0 4px 4px 0;
+    -fx-padding: 8px 15px;
+    -fx-cursor: hand;
+}
+.btn-search:hover {
+    -fx-background-color: #f3a847;
+}
+
+/* Các box nền trắng có viền (Ảnh, Lịch sử, Chi tiết) */
+.white-box {
+    -fx-background-color: white;
+    -fx-border-color: #dddddd;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+}
+
+/* Cột Trái (Thông tin Sản phẩm) */
+.image-container {
+    -fx-padding: 10px;
+}
+
+.product-name {
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #0f1111;
+}
+
+.price-label {
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #b12704; /* Đỏ đô hiển thị giá */
+}
+
+.timer-label {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #e67e22; /* Cam đồng hồ */
+}
+
+.progress-bar-bg {
+    -fx-background-color: #eaeded;
+    -fx-background-radius: 2px;
+}
+
+/* Khung Chi tiết sản phẩm */
+.details-card {
+    -fx-padding: 15px;
+}
+
+.card-title {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #0f1111;
+}
+
+.seller-name {
+    -fx-font-weight: bold;
+    -fx-text-fill: #0f1111;
+}
+
+.label-normal {
+    -fx-font-size: 14px;
+    -fx-text-fill: #333333;
+}
+
+/* Cột Phải (Lịch sử đấu giá) */
+.section-title {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #0f1111;
+}
+
+.history-list {
+    -fx-border-color: #dddddd;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+}
+.history-list .list-cell {
+    -fx-padding: 12px;
+    -fx-border-color: transparent transparent #eaeded transparent;
+    -fx-border-width: 1px;
+    -fx-font-size: 14px;
+    -fx-text-fill: #0f1111;
+}
+.history-list .list-cell:odd {
+    -fx-background-color: #f9f9f9; 
+}
+.history-list .list-cell:even {
+    -fx-background-color: white;
+}
+
+/* Khu vực nhập giá */
+.bid-input-container {
+    -fx-padding: 10px;
+}
+
+.input-field {
+    -fx-font-size: 14px;
+    -fx-background-color: white;
+    -fx-border-color: #a6a6a6;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+    -fx-padding: 10px;
+}
+.input-field:focused {
+    -fx-border-color: #e77600; /* Viền cam khi click vào */
+    -fx-effect: dropshadow(three-pass-box, rgba(231,118,0,0.5), 5, 0, 0, 0);
+}
+
+/* Nút bấm */
+.btn-primary {
+    -fx-background-color: #f0c14b; /* Vàng nút Amazon */
+    -fx-text-fill: #111111;
+    -fx-font-size: 14px;
+    -fx-background-radius: 3px;
+    -fx-border-color: #a88734 #9c7e31 #846a29;
+    -fx-border-radius: 3px;
+    -fx-cursor: hand;
+}
+.btn-primary:hover {
+    -fx-background-color: #f4d078;
+}
+
+.btn-secondary {
+    -fx-background-color: #f3f3f3;
+    -fx-text-fill: #111111; 
+    -fx-border-color: #a6a6a6;
+    -fx-border-radius: 3px;
+    -fx-padding: 6px 12px;
+    -fx-font-size: 13px;
+    -fx-cursor: hand;
+}
+.btn-secondary:hover {
+    -fx-background-color: #e7eaf0;
+}
