@@ -12,7 +12,7 @@ import javafx.util.Duration;
 public class LoginController {
 
     @FXML private StackPane rootPane; 
-    @FXML private TextField txtUsername;
+    @FXML private TextField txtEmail;
     @FXML private PasswordField txtPassword;
     
     // ĐÃ THÊM: Biến liên kết với dòng chữ báo lỗi trên giao diện
@@ -28,14 +28,14 @@ public class LoginController {
 
     @FXML
     private void handleLoginAction(ActionEvent event) {
-        String enteredUsername = txtUsername.getText(); 
+        String enteredEmail = txtEmail.getText(); 
         String enteredPassword = txtPassword.getText(); 
         
         // Reset lại chữ trống mỗi khi người dùng bấm nút mới
         lblError.setText("");
 
-        if (client.service.FirebaseService.checkLogin(enteredUsername, enteredPassword)) {
-            client.service.FirebaseService.registeredUsername = enteredUsername; 
+        if (client.service.AuthService.login(enteredEmail, enteredPassword)) {
+            
             try {
                 javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(getClass().getResource("/client/view/ProductList.fxml"));
                 javafx.scene.Parent root = loader.load();
