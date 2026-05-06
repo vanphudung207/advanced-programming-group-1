@@ -50,7 +50,9 @@ public class AuthService {
                 os.write(input, 0, input.length);
             }
             //nếu dữ liệu đúng fb sẽ phản hổi 200
-            return conn.getResponseCode() == 200;
+            int responseCode = conn.getResponseCode();
+            System.out.println("REGISTER CODE: " + responseCode);
+            return responseCode == 200;
 
         } catch(Exception e) {
 
@@ -100,7 +102,9 @@ public class AuthService {
                 os.write(input, 0, input.length);
             }
 
-            return conn.getResponseCode() == 200;
+            int responseCode = conn.getResponseCode();
+            System.out.println("LOGIN CODE: " + responseCode);
+            return responseCode == 200;
 
         } catch(Exception e) {
 

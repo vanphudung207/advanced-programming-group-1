@@ -21,7 +21,7 @@
                textAlignment="CENTER"
                style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: white;"/>
 
-        <TextField fx:id="txtemail" promptText="Enter your email..."/>
+        <TextField fx:id="txtEmail" promptText="Enter your email..."/>
 
         <PasswordField fx:id="txtPassword" promptText="Enter password..."/>
 

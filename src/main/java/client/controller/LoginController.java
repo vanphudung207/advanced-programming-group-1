@@ -1,11 +1,12 @@
 package client.controller;
+
 import client.service.AuthService;
 import javafx.animation.FadeTransition;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
-import javafx.scene.control.Label; // ĐÃ THÊM: Import thư viện Label
+import javafx.scene.control.Label;
 import javafx.scene.layout.StackPane; 
 import javafx.util.Duration;
 
@@ -20,16 +21,27 @@ public class LoginController {
 
     @FXML
     public void initialize() {
-        FadeTransition fadeIn = new FadeTransition(Duration.millis(1000), rootPane);
+
+        FadeTransition fadeIn =
+            new FadeTransition(
+                Duration.millis(1000),
+                rootPane
+            );
+
         fadeIn.setFromValue(0.0);
         fadeIn.setToValue(1.0);
+
         fadeIn.play();
     }
 
     @FXML
     private void handleLoginAction(ActionEvent event) {
-        String enteredEmail = txtEmail.getText(); 
-        String enteredPassword = txtPassword.getText(); 
+
+        String enteredEmail =
+            txtEmail.getText();
+
+        String enteredPassword =
+            txtPassword.getText();
         
         // Reset lại chữ trống mỗi khi người dùng bấm nút mới
         lblError.setText("");
@@ -49,7 +61,8 @@ public class LoginController {
                         )
                     );
 
-                javafx.scene.Parent root = loader.load();
+                javafx.scene.Parent root =
+                    loader.load();
 
                 javafx.stage.Stage stage =
                     (javafx.stage.Stage)
@@ -68,18 +81,18 @@ public class LoginController {
 
                 e.printStackTrace();
             }
-
         }
 
         // ĐĂNG NHẬP USER BÌNH THƯỜNG
         else if (
-            client.service.AuthService.login(
+            AuthService.login(
                 enteredEmail,
                 enteredPassword
             )
         ) {
-            
+
             try {
+
                 javafx.fxml.FXMLLoader loader =
                     new javafx.fxml.FXMLLoader(
                         getClass().getResource(
@@ -87,7 +100,8 @@ public class LoginController {
                         )
                     );
 
-                javafx.scene.Parent root = loader.load();
+                javafx.scene.Parent root =
+                    loader.load();
 
                 javafx.stage.Stage stage =
                     (javafx.stage.Stage)
@@ -119,13 +133,34 @@ public class LoginController {
 
     @FXML
     private void switchToRegister(ActionEvent event) {
+
         try {
-            javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(getClass().getResource("/client/view/Register.fxml"));
-            javafx.scene.Parent registerRoot = loader.load();
-            javafx.stage.Stage stage = (javafx.stage.Stage) ((javafx.scene.Node) event.getSource()).getScene().getWindow();
+
+            javafx.fxml.FXMLLoader loader =
+                new javafx.fxml.FXMLLoader(
+                    getClass().getResource(
+                        "/client/view/Register.fxml"
+                    )
+                );
+
+            javafx.scene.Parent registerRoot =
+                loader.load();
+
+            javafx.stage.Stage stage =
+                (javafx.stage.Stage)
+                ((javafx.scene.Node)
+                event.getSource())
+                .getScene()
+                .getWindow();
+
             stage.getScene().setRoot(registerRoot);
-            stage.setTitle("Online Auction System - Register");
+
+            stage.setTitle(
+                "Online Auction System - Register"
+            );
+
         } catch (java.io.IOException e) {
+
             e.printStackTrace();
         }
     }
