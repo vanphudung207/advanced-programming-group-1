@@ -34,20 +34,86 @@ public class LoginController {
         // Reset lại chữ trống mỗi khi người dùng bấm nút mới
         lblError.setText("");
 
-        if (client.service.AuthService.login(enteredEmail, enteredPassword)) {
-            
+        // TÀI KHOẢN ADMIN CỐ ĐỊNH
+        if (
+            enteredEmail.equals("admin@gmail.com")
+            && enteredPassword.equals("123")
+        ) {
+
             try {
-                javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(getClass().getResource("/client/view/ProductList.fxml"));
+
+                javafx.fxml.FXMLLoader loader =
+                    new javafx.fxml.FXMLLoader(
+                        getClass().getResource(
+                            "/client/view/Admin.fxml"
+                        )
+                    );
+
                 javafx.scene.Parent root = loader.load();
-                javafx.stage.Stage stage = (javafx.stage.Stage) ((javafx.scene.Node) event.getSource()).getScene().getWindow();
+
+                javafx.stage.Stage stage =
+                    (javafx.stage.Stage)
+                    ((javafx.scene.Node)
+                    event.getSource())
+                    .getScene()
+                    .getWindow();
+
                 stage.getScene().setRoot(root);
-                stage.setTitle("Online Auction System - Danh sách sản phẩm"); 
+
+                stage.setTitle(
+                    "Online Auction System - Admin"
+                );
+
             } catch (Exception e) {
+
                 e.printStackTrace();
             }
-        } else {
+
+        }
+
+        // ĐĂNG NHẬP USER BÌNH THƯỜNG
+        else if (
+            client.service.AuthService.login(
+                enteredEmail,
+                enteredPassword
+            )
+        ) {
+            
+            try {
+                javafx.fxml.FXMLLoader loader =
+                    new javafx.fxml.FXMLLoader(
+                        getClass().getResource(
+                            "/client/view/ProductList.fxml"
+                        )
+                    );
+
+                javafx.scene.Parent root = loader.load();
+
+                javafx.stage.Stage stage =
+                    (javafx.stage.Stage)
+                    ((javafx.scene.Node)
+                    event.getSource())
+                    .getScene()
+                    .getWindow();
+
+                stage.getScene().setRoot(root);
+
+                stage.setTitle(
+                    "Online Auction System - Danh sách sản phẩm"
+                );
+
+            } catch (Exception e) {
+
+                e.printStackTrace();
+            }
+        }
+
+        else {
+
             // HIỆN LỖI MÀU ĐỎ TRỰC TIẾP TRÊN GIAO DIỆN
-            lblError.setText("Sai tên tài khoản hoặc mật khẩu! Vui lòng thử lại.");
+            lblError.setText(
+                "Sai email hoặc mật khẩu! Vui lòng thử lại."
+            );
         }
     }
 
