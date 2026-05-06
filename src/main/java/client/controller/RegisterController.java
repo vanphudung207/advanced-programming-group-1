@@ -50,7 +50,7 @@ public class RegisterController {
 
         // 2. Kiểm tra điều kiện (Thay vì bật bảng, giờ ép chữ lỗi hiển thị)
         if (username.isEmpty() || password.isEmpty() || confirmPassword.isEmpty() || phone.isEmpty()) {
-            lblError.setText("Vui lòng điền đầy đủ thông tin (Kể cả số điện thoại)!");
+            lblError.setText("Vui lòng điền đầy đủ thông tin (Kể cả email)!");
             return;
         }
 
@@ -59,8 +59,8 @@ public class RegisterController {
             return; 
         }
 
-        // 4. Ghi dữ liệu
-        boolean isSuccess = client.service.FirebaseService.registerUser(username, password, phone);
+        // 4. Ghi dữ liệu //gửi email+pw lên au firebase
+        boolean isSuccess =client.service.AuthService.register(username,password);
 
         if (isSuccess) {
             // Nếu đăng ký thành công, đổi màu chữ thành Xanh Lá cho uy tín
