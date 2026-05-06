@@ -20,11 +20,7 @@
                style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #ffffff;"/>
 
         <TextField fx:id="txtUsername" 
-                   promptText="Enter your username..."/>
-
-        <TextField fx:id="txtPhone" 
-                   promptText="Enter your phone number..." />
-
+                   promptText="Enter your email..."/>
         <PasswordField fx:id="txtPassword" 
                        promptText="Enter password..." />
 
