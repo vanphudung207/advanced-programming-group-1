@@ -1,5 +1,5 @@
 package client.controller;
-
+import client.service.AuthService;
 import javafx.animation.FadeTransition;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
