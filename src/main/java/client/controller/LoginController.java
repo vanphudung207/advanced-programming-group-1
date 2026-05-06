@@ -48,8 +48,8 @@ public class LoginController {
 
         // TÀI KHOẢN ADMIN CỐ ĐỊNH
         if (
-            enteredEmail.equals("admin@gmail.com")
-            && enteredPassword.equals("123")
+            enteredEmail.equals("Admin@gmail.com")
+            && enteredPassword.equals("nhom1")
         ) {
 
             try {
