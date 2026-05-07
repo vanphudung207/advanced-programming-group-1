@@ -4,7 +4,7 @@ package client.controller;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.control.ComboBox; // Dùng cho hộp Sắp xếp
+import javafx.scene.control.ComboBox; 
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.layout.HBox;
@@ -13,7 +13,7 @@ import javafx.geometry.Pos;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.ArrayList; // Dùng để tạo mảng sao chép
+import java.util.ArrayList; 
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
@@ -31,156 +31,126 @@ public class ProductListController {
     @FXML private Button btnSearch;
     @FXML private javafx.scene.control.TextField txtSearch; 
     
-    // ĐÃ THÊM: Biến nối với Hộp chọn sắp xếp trên giao diện
     @FXML private ComboBox<String> cbSort;
     
-    // ĐÃ THÊM: Biến "Trí nhớ ngắn hạn" lưu giữ danh sách sản phẩm ĐANG HIỂN THỊ trên màn hình để đem đi sắp xếp
     private List<Product> currentDisplayedProducts;
 
     // ==============================================================
-    // HÀM KHỞI TẠO CHÍNH (Chạy đầu tiên khi mở app)
+    // HÀM KHỞI TẠO CHÍNH
     // ==============================================================
     @FXML
     public void initialize() {
         
-        // 1. Chạy đồng hồ thời gian thực góc trái màn hình
+        // 1. Chạy đồng hồ
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("hh:mm a | dd MMM, yyyy");
         Timeline clock = new Timeline(new KeyFrame(Duration.ZERO, e -> {
-            lblDateTime.setText(LocalDateTime.now().format(formatter)); // Cập nhật chữ mỗi giây
+            lblDateTime.setText(LocalDateTime.now().format(formatter)); 
         }), new KeyFrame(Duration.seconds(1)));
-        clock.setCycleCount(Animation.INDEFINITE); // Cho vòng lặp chạy vô hạn
+        clock.setCycleCount(Animation.INDEFINITE); 
         clock.play(); 
 
-        // 2. Cài đặt các tùy chọn cho Hộp Sắp xếp (ComboBox)
+        // 2. Cài đặt Hộp Sắp xếp
         if (cbSort != null) {
-            // Nạp 3 chế độ vào hộp thả xuống
             cbSort.getItems().addAll("Mặc định", "Giá: Thấp đến Cao", "Giá: Cao đến Thấp");
-            // Set giá trị lúc mới bật app lên là Mặc định
             cbSort.setValue("Mặc định");
         }
 
-        // 3. Tải toàn bộ sản phẩm từ DB lên và lưu vào Trí nhớ ngắn hạn
+        // 3. Tải toàn bộ sản phẩm
         currentDisplayedProducts = client.service.FirebaseService.getAllProducts();
-        // Gọi hàm vẽ lưới để hiển thị danh sách đó ra màn hình
         loadProductsToGrid(currentDisplayedProducts);
 
-        // 4. Kích hoạt hiệu ứng Hover (Phóng to nút) cho thanh Danh mục
+        // 4. Kích hoạt hiệu ứng Hover
         if (categoryBox != null) {
-            // Quét qua mọi thành phần trong HBox
             for (javafx.scene.Node node : categoryBox.getChildren()) {
                 if (node instanceof Button) {
-                    applySmoothHover((Button) node); // Gắn phép thuật phóng to cho từng nút
+                    applySmoothHover((Button) node); 
                 }
             }
         }
-        // Gắn luôn hiệu ứng Hover cho nút Tìm kiếm
         if (btnSearch != null) {
             applySmoothHover(btnSearch);
         }
     }
 
     // ==============================================================
-    // HÀM XỬ LÝ KHI CHỌN CHẾ ĐỘ SẮP XẾP TỪ COMBOBOX
+    // XỬ LÝ SẮP XẾP
     // ==============================================================
     @FXML
     private void handleSortAction(javafx.event.ActionEvent event) {
-        // Nếu danh sách hiện tại đang trống (chưa có hàng) thì không cần sắp xếp, thoát hàm luôn
         if (currentDisplayedProducts == null || currentDisplayedProducts.isEmpty()) {
             return;
         }
 
-        // Đọc xem người dùng vừa chọn chế độ gì (Mặc định hay Cao-Thấp...)
         String sortType = cbSort.getValue();
-        
-        // Tạo một bản sao chép của danh sách hiện tại để tránh làm hỏng dữ liệu gốc
         List<Product> sortedList = new ArrayList<>(currentDisplayedProducts);
 
-        // Chạy thuật toán sắp xếp dựa trên lựa chọn
         if ("Giá: Thấp đến Cao".equals(sortType)) {
-            // Lệnh sort() sẽ đảo vị trí: So sánh Giá hiện tại của p1 và p2, xếp tăng dần
             sortedList.sort((p1, p2) -> Double.compare(p1.getCurrentBid(), p2.getCurrentBid()));
         } else if ("Giá: Cao đến Thấp".equals(sortType)) {
-            // Lệnh sort() đảo vị trí: Đảo ngược lại p2 với p1 để xếp giảm dần
             sortedList.sort((p1, p2) -> Double.compare(p2.getCurrentBid(), p1.getCurrentBid()));
         } 
-        // (Nếu là "Mặc định" thì bỏ qua khối if này, giữ nguyên mảng cũ)
 
-        // Gọi hàm xóa lưới cũ và vẽ lại lưới mới với danh sách đã được sắp xếp
         loadProductsToGrid(sortedList);
         System.out.println("-> Đã sắp xếp lại lưới theo: " + sortType);
     }
 
     // ==============================================================
-    // HÀM XỬ LÝ KHI NGƯỜI DÙNG GÕ CHỮ VÀ BẤM TÌM KIẾM
+    // XỬ LÝ TÌM KIẾM
     // ==============================================================
     @FXML
     private void handleSearchAction(javafx.event.ActionEvent event) {
-        // Lấy dòng chữ người dùng vừa gõ, dùng hàm trim() để cắt bỏ dấu cách thừa ở đầu/cuối
         String keyword = txtSearch.getText().trim(); 
 
-        // Nếu người dùng không gõ gì mà cứ bấm nút tìm
         if (keyword.isEmpty()) {
-            // Lấy lại toàn bộ kho hàng gốc
             currentDisplayedProducts = client.service.FirebaseService.getAllProducts();
         } else {
-            // Gọi điện nhờ Database giả lập đi tìm hàng giúp
             currentDisplayedProducts = client.service.FirebaseService.searchProducts(keyword);
         }
 
-        // Reset hộp Sắp xếp về "Mặc định" để tránh lỗi logic khi lọc ra danh sách mới
         cbSort.setValue("Mặc định");
-        // Vẽ danh sách mới lên lưới
         loadProductsToGrid(currentDisplayedProducts);
         System.out.println("Đã tìm: '" + keyword + "' - Trả về " + currentDisplayedProducts.size() + " kết quả.");
     }
 
     // ==============================================================
-    // HÀM LỌC SẢN PHẨM THEO TỪNG NÚT BẤM (ĐIỆN TỬ, GIA DỤNG...)
+    // LỌC DANH MỤC
     // ==============================================================
     @FXML
     private void handleFilterCategory(javafx.event.ActionEvent event) {
-        // Chộp lấy cái nút vừa bấm
         Button clickedButton = (Button) event.getSource(); 
-        // Rút chữ trên nút ra đọc
         String categoryName = clickedButton.getText(); 
         
-        // Hỏi CSDL lấy danh sách theo loại, rồi lưu vào Trí nhớ ngắn hạn
         currentDisplayedProducts = client.service.FirebaseService.getProductsByCategory(categoryName); 
         
-        // Cập nhật lại thanh tìm kiếm cho trống và Reset sắp xếp
         txtSearch.clear();
         cbSort.setValue("Mặc định");
         
-        // Ném danh sách mới vào hàm vẽ
         loadProductsToGrid(currentDisplayedProducts); 
     }
 
     // ==============================================================
-    // HÀM HIỆU ỨNG: PHÓNG TO NÚT KHI DI CHUỘT
+    // HIỆU ỨNG HOVER
     // ==============================================================
     private void applySmoothHover(Button btn) {
-        // Tạo bộ máy chuyển động phóng to trong 0.15 giây
         javafx.animation.ScaleTransition st = new javafx.animation.ScaleTransition(Duration.millis(150), btn);
-        btn.setOnMouseEntered(e -> { // Di chuột vào
-            st.setToX(1.1); // Phóng to chiều ngang 10%
-            st.setToY(1.1); // Phóng to chiều dọc 10%
+        btn.setOnMouseEntered(e -> { 
+            st.setToX(1.1); 
+            st.setToY(1.1); 
             st.playFromStart();
         });
-        btn.setOnMouseExited(e -> { // Rút chuột ra
-            st.setToX(1.0); // Trả về tỷ lệ 1:1 ban đầu
+        btn.setOnMouseExited(e -> { 
+            st.setToX(1.0); 
             st.setToY(1.0);
             st.playFromStart();
         });
     }
 
     // ==============================================================
-    // HÀM TẢI VÀ VẼ DANH SÁCH SẢN PHẨM LÊN LƯỚI (BAO GỒM EMPTY STATE & TRẠNG THÁI)
+    // TẢI SẢN PHẨM LÊN LƯỚI (ĐÃ BỌC THÉP CHỐNG LỖI NULL)
     // ==============================================================
     private void loadProductsToGrid(List<Product> products) {
-        // Dọn sạch bàn cũ trước khi bày cỗ mới
         productContainer.getChildren().clear(); 
 
-        // -- XỬ LÝ TRẠNG THÁI TRỐNG (EMPTY STATE) --
         if (products == null || products.isEmpty()) {
             productContainer.setAlignment(Pos.CENTER); 
             VBox emptyStateBox = new VBox(15);
@@ -196,13 +166,11 @@ public class ProductListController {
 
             emptyStateBox.getChildren().addAll(iconLabel, messageLabel, subMessageLabel);
             productContainer.getChildren().add(emptyStateBox);
-            return; // Thoát hàm luôn
+            return; 
         }
 
-        // -- NẾU CÓ SẢN PHẨM, TRẢ LẠI CĂN CHỈNH MẶC ĐỊNH --
         productContainer.setAlignment(Pos.TOP_LEFT);
 
-        // Lấy từng sản phẩm chạy vào vòng lặp để đóng gói thành Thẻ
         for (Product p : products) {
             
             // --- 1. KHUNG THẺ CHÍNH ---
@@ -215,36 +183,55 @@ public class ProductListController {
             card.setOnMouseEntered(e -> card.setStyle(hoverStyle)); 
             card.setOnMouseExited(e -> card.setStyle(normalStyle)); 
 
-            // --- 2. XỬ LÝ ẢNH ---
+            // --- 2. XỬ LÝ ẢNH (BỌC THÉP CHỐNG NULL) ---
             ImageView imgView = new ImageView();
-            try {
-                Image img = new Image(p.getImagePath(), true); 
-                imgView.setImage(img);
-            } catch (Exception ex) {
-                System.out.println("Lỗi tải ảnh cho: " + p.getName());
+            String imagePath = p.getImagePath();
+            
+            if (imagePath != null && !imagePath.trim().isEmpty()) {
+                try {
+                    Image img = new Image(imagePath, true); 
+                    imgView.setImage(img);
+                } catch (Exception ex) {
+                    System.out.println("Lỗi tải ảnh cho: " + p.getName());
+                }
+            } else {
+                System.out.println("Cảnh báo: Sản phẩm thiếu link ảnh -> " + p.getName());
+                // Nếu muốn, bạn có thể set 1 cái ảnh mặc định (Placeholder) ở đây
             }
+            
             imgView.setFitWidth(180); 
             imgView.setFitHeight(130);
             imgView.setPreserveRatio(true); 
 
-            // Cắt góc ảnh cho bo tròn
             javafx.scene.shape.Rectangle clip = new javafx.scene.shape.Rectangle(180, 130);
             clip.setArcWidth(15); 
             clip.setArcHeight(15);
             imgView.setClip(clip); 
 
-            // --- 3. DÙNG STACKPANE ĐỂ XẾP CHỒNG NHÃN LÊN ẢNH ---
+            // --- 3. DÙNG STACKPANE & XỬ LÝ THỜI GIAN (BỌC THÉP CHỐNG NULL NPE) ---
             StackPane imageContainer = new StackPane(imgView);
             imageContainer.setPrefHeight(130);
             
             Label statusBadge = new Label();
-            String time = p.getTimeRemaining().toLowerCase(); 
             
-            // THUẬT TOÁN ĐỊNH VỊ TRẠNG THÁI (ĐÃ FIX LỖI BẮT NHẦM TỪ KHÓA)
-            if (time.equals("0") || time.contains("đã kết thúc") || time.contains("hết")) {
+            // Rút thời gian an toàn
+            String rawTime = p.getTimeRemaining();
+            String safeTime = "Không xác định"; 
+            String timeLower = ""; // Biến dùng riêng cho logic phân loại
+            
+            if (rawTime != null && !rawTime.trim().isEmpty()) {
+                safeTime = rawTime;
+                timeLower = rawTime.toLowerCase();
+            }
+
+            // Phân loại trạng thái an toàn
+            if (timeLower.isEmpty()) {
+                statusBadge.setText("⚪ CHƯA RÕ");
+                statusBadge.setStyle("-fx-background-color: #95a5a6; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 10px; -fx-padding: 4px 8px; -fx-background-radius: 5px;");
+            } else if (timeLower.equals("0") || timeLower.contains("đã kết thúc") || timeLower.contains("hết")) {
                 statusBadge.setText("⚫ ĐÃ KẾT THÚC");
                 statusBadge.setStyle("-fx-background-color: #7f8c8d; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 10px; -fx-padding: 4px 8px; -fx-background-radius: 5px;");
-            } else if (!time.contains("h") && !time.contains("d")) {
+            } else if (!timeLower.contains("h") && !timeLower.contains("d")) {
                 statusBadge.setText("🔴 SẮP KẾT THÚC");
                 statusBadge.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 10px; -fx-padding: 4px 8px; -fx-background-radius: 5px;");
             } else {
@@ -252,13 +239,13 @@ public class ProductListController {
                 statusBadge.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 10px; -fx-padding: 4px 8px; -fx-background-radius: 5px;");
             }
             
-            // Ép dính góc ảnh
             StackPane.setAlignment(statusBadge, Pos.TOP_LEFT);
             StackPane.setMargin(statusBadge, new javafx.geometry.Insets(5));
             imageContainer.getChildren().add(statusBadge);
 
             // --- 4. THÔNG TIN CHỮ BÊN DƯỚI ---
-            Label nameLabel = new Label(p.getName());
+            String safeName = (p.getName() != null) ? p.getName() : "Sản phẩm ẩn danh";
+            Label nameLabel = new Label(safeName);
             nameLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 15px; -fx-text-fill: #2c3e50;");
 
             Label bidSubtitle = new Label("Current bid");
@@ -270,7 +257,8 @@ public class ProductListController {
             Label priceLabel = new Label(String.format("%,.0f VNĐ", p.getCurrentBid()));
             priceLabel.setStyle("-fx-text-fill: #e74c3c; -fx-font-weight: bold; -fx-font-size: 16px;");
 
-            Label timeLabel = new Label("⏱ " + p.getTimeRemaining());
+            // Hiển thị biến safeTime đã được lọc
+            Label timeLabel = new Label("⏱ " + safeTime);
             timeLabel.setStyle("-fx-text-fill: #2980b9; -fx-font-weight: bold; -fx-background-color: #ebf5fb; -fx-padding: 3px 8px; -fx-background-radius: 5px;");
 
             priceTimeBox.getChildren().addAll(priceLabel, timeLabel); 
@@ -284,7 +272,6 @@ public class ProductListController {
             btnBid.setOnMouseEntered(e -> btnBid.setStyle(btnHover)); 
             btnBid.setOnMouseExited(e -> btnBid.setStyle(btnNormal)); 
             
-            // Chuyển trang lột vỏ
             btnBid.setOnAction(event -> {
                 try {
                     javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(getClass().getResource("/client/view/AuctionRoom.fxml"));
@@ -293,21 +280,19 @@ public class ProductListController {
                     roomController.setProductData(p); 
                     javafx.stage.Stage stage = (javafx.stage.Stage) ((javafx.scene.Node) event.getSource()).getScene().getWindow();
                     stage.getScene().setRoot(auctionRoot); 
-                    stage.setTitle("Auction Room - " + p.getName());
+                    stage.setTitle("Auction Room - " + safeName);
                 } catch (java.io.IOException e) {
                     e.printStackTrace();
                 }
             });
 
-            // Gói ghém tất cả Ảnh, Tên, Giá, Nút vào trong Thẻ
             card.getChildren().addAll(imageContainer, nameLabel, bidSubtitle, priceTimeBox, btnBid);
-            // Phục vụ món ăn lên Lưới màn hình
             productContainer.getChildren().add(card);
         }
     }
 
     // ==============================================================
-    // CÁC HÀM TIỆN ÍCH (Đăng xuất, Hiển thị thông tin, Đăng SP)
+    // CÁC HÀM TIỆN ÍCH
     // ==============================================================
     @FXML
     private void handleLogoutAction(javafx.event.ActionEvent event) {
