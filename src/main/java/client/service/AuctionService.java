@@ -1,10 +1,17 @@
-package client.service; 
-// Cũng nằm trong service vì đây là logic nghiệp vụ (business logic)
+package client.service;
+
 public class AuctionService {
-    //kiểm tra xem giá mới có hợp lệ không
+
+    /**
+     * Kiểm tra giá mới có hợp lệ không.
+     * Điều kiện: newPrice >= currentBid + stepPrice
+     *
+     * @param newPrice   Giá người dùng vừa nhập
+     * @param currentBid Giá đang cao nhất hiện tại
+     * @param stepPrice  Bước giá tối thiểu mỗi lần trả
+     * @return true nếu hợp lệ, false nếu không
+     */
     public static boolean isValidBid(double newPrice, double currentBid, double stepPrice) {
-        // Điều kiện hợp lệ:
-        // giá mới phải >= giá hiện tại + bước giá
         return newPrice >= currentBid + stepPrice;
     }
 }
