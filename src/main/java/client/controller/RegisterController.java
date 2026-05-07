@@ -81,7 +81,15 @@ public class RegisterController {
 
             return;
         }
+        // Kiểm tra độ dài mật khẩu
+        if (password.length() < 6) {
 
+            lblError.setText(
+                "Mật khẩu phải có ít nhất 6 ký tự!"
+            );
+
+            return;
+        }
         // Kiểm tra xác nhận mật khẩu
         if (!password.equals(confirmPassword)) {
 
