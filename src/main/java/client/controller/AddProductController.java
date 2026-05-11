@@ -15,6 +15,9 @@ import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
 import java.io.File;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
 
 public class AddProductController {
 
@@ -42,14 +45,13 @@ public class AddProductController {
 
     @FXML
     private void handleAddProduct(ActionEvent event) {
-        String name         = txtName.getText().trim();
-        String startPriceStr= txtStartPrice.getText().trim();
-        String stepPriceStr = txtStepPrice.getText().trim();
-        String category     = cbCategory.getValue();
-        String hour         = cbHour.getValue();
-        String minute       = cbMinute.getValue();
+        String name          = txtName.getText().trim();
+        String startPriceStr = txtStartPrice.getText().trim();
+        String stepPriceStr  = txtStepPrice.getText().trim();
+        String category      = cbCategory.getValue();
+        String hour          = cbHour.getValue();
+        String minute        = cbMinute.getValue();
 
-        // --- Validate ---
         if (name.isEmpty() || startPriceStr.isEmpty() || stepPriceStr.isEmpty()
                 || dpEndDate.getValue() == null || hour == null || minute == null) {
             showAlert(AlertType.WARNING, "Thiếu thông tin",
@@ -75,21 +77,35 @@ public class AddProductController {
                 return;
             }
 
+            // Tính endTime tuyệt đối từ ngày + giờ + phút người dùng chọn
+            LocalDateTime endDateTime = LocalDateTime.of(
+                dpEndDate.getValue(),
+                LocalTime.of(Integer.parseInt(hour), Integer.parseInt(minute), 0)
+            );
+            long endTime = endDateTime
+                .atZone(ZoneId.systemDefault())
+                .toInstant()
+                .toEpochMilli();
+
+            // Validate: phải sau thời điểm hiện tại
+            if (endTime <= System.currentTimeMillis()) {
+                showAlert(AlertType.WARNING, "Thời gian không hợp lệ",
+                    "Thời gian kết thúc phải sau thời điểm hiện tại!");
+                return;
+            }
+
             String timeRemaining = "Kết thúc vào: "
                 + dpEndDate.getValue().toString() + " " + hour + ":" + minute;
-
-            String seller = (FirebaseService.registeredUsername != null)
+            String seller = FirebaseService.registeredUsername != null
                             ? FirebaseService.registeredUsername : "Khách vãng lai";
 
-            // FIX: Dùng constructor đầy đủ với stepPrice
-            // ID tạm để sau Firebase trả về key thực
+            // Truyền endTime tuyệt đối — timer sẽ tự tính từ đây
             Product newProduct = new Product(
                 null, name, startPrice, timeRemaining,
                 selectedImagePath, seller, category,
-                stepPrice, "active", 60
+                stepPrice, "active", endTime
             );
 
-            // FIX: addProduct trả về Firebase key thực → set ngược vào product
             String firebaseKey = FirebaseService.addProduct(newProduct);
             if (firebaseKey != null) {
                 newProduct.setFirebaseKey(firebaseKey);
@@ -109,27 +125,24 @@ public class AddProductController {
 
     @FXML
     private void handleChooseImage(ActionEvent event) {
-        FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Chọn ảnh sản phẩm đấu giá");
-        fileChooser.getExtensionFilters().add(
+        FileChooser fc = new FileChooser();
+        fc.setTitle("Chọn ảnh sản phẩm đấu giá");
+        fc.getExtensionFilters().add(
             new FileChooser.ExtensionFilter("Image Files", "*.png", "*.jpg", "*.jpeg"));
 
         Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
-        File file = fileChooser.showOpenDialog(stage);
+        File file = fc.showOpenDialog(stage);
 
         if (file != null) {
-            String absoluteUrl = file.toURI().toString();
-            selectedImagePath = absoluteUrl;
-            imgPreview.setImage(new Image(absoluteUrl));
+            selectedImagePath = file.toURI().toString();
+            imgPreview.setImage(new Image(selectedImagePath));
             lblImageStatus.setText("Đã chọn: " + file.getName());
             lblImageStatus.setStyle("-fx-text-fill: #27ae60; -fx-font-weight: bold;");
         }
     }
 
     @FXML
-    private void handleCancel(ActionEvent event) {
-        returnToProductList(event);
-    }
+    private void handleCancel(ActionEvent event) { returnToProductList(event); }
 
     private void returnToProductList(ActionEvent event) {
         try {

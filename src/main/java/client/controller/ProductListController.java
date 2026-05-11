@@ -149,7 +149,7 @@ public class ProductListController {
             card.setOnMouseEntered(e -> card.setStyle(hs));
             card.setOnMouseExited(e -> card.setStyle(ns));
 
-            // --- Ảnh (ĐÃ GỘP BỌC THÉP CHỐNG NULL VÀ TRY-CATCH) ---
+            // --- Ảnh (bảo vệ null và try-catch) ---
             ImageView imgView = new ImageView();
             String imagePath = p.getImagePath();
             if (imagePath != null && !imagePath.trim().isEmpty()) {
@@ -171,7 +171,7 @@ public class ProductListController {
             StackPane.setMargin(badge, new Insets(5));
             imgContainer.getChildren().add(badge);
 
-            // --- Tên, giá (BẢO VỆ NULL TÊN) ---
+            // --- Tên, giá (bảo vệ null tên) ---
             String safeName = (p.getName() != null) ? p.getName() : "Sản phẩm ẩn danh";
             Label nameLabel = new Label(safeName);
             nameLabel.setStyle("-fx-font-weight:bold;-fx-font-size:15px;-fx-text-fill:#2c3e50;");
@@ -213,6 +213,7 @@ public class ProductListController {
 
         // =====================================================================
         // GLOBAL TIMER: chạy mỗi giây, cập nhật TẤT CẢ thẻ đồng thời
+        // Dùng endTime tuyệt đối → không bao giờ sai dù thoát vào lại
         // =====================================================================
         globalCardTimer = new Timeline(new KeyFrame(Duration.seconds(1), e -> {
             for (int i = 0; i < cardProducts.size(); i++) {
@@ -227,7 +228,7 @@ public class ProductListController {
     }
 
     // =========================================================================
-    // HELPER: Cập nhật label thời gian đếm ngược
+    // HELPER: Cập nhật label thời gian đếm ngược từ endTime tuyệt đối
     // =========================================================================
     private void refreshTimeLabel(Label label, Product p) {
         if (p.isEnded()) {
@@ -238,6 +239,7 @@ public class ProductListController {
         }
         int secs = p.getSecondsRemainingNow();
         if (secs <= 0) {
+            // endTime vừa qua → đánh dấu ended (sẽ được confirm bởi Firebase sau)
             p.setStatus("ended");
             label.setText("⏹ Đã kết thúc");
             label.setStyle("-fx-text-fill:#7f8c8d;-fx-font-weight:bold;"
@@ -289,7 +291,6 @@ public class ProductListController {
             ctrl.setProductData(p);
             Stage stage = (Stage) ((Node) ev.getSource()).getScene().getWindow();
             stage.getScene().setRoot(root);
-            
             String safeName = (p.getName() != null) ? p.getName() : "Sản phẩm ẩn danh";
             stage.setTitle("Auction Room - " + safeName);
         } catch (IOException e) { e.printStackTrace(); }

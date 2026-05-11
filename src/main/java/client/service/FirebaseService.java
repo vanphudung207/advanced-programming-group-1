@@ -261,4 +261,16 @@ public class FirebaseService {
         if (key == null) return null;
         return getDB().child("products").child(key);
     }
+
+    // ==============================================================
+    // 11. LƯU PHONE KHI ĐĂNG KÝ (encode email: '.' -> ',')
+    // Firebase không cho dùng '.' trong key
+    // ==============================================================
+    public static void saveUserPhone(String email, String phone) {
+        if (email == null || phone == null) return;
+        String key = email.replace(".", ",");
+        getDB().child("users").child(key).child("phone").setValueAsync(phone);
+        getDB().child("users").child(key).child("email").setValueAsync(email);
+    }
+
 }

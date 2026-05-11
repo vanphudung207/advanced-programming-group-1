@@ -1,166 +1,107 @@
 package client.controller;
 
 import client.service.AuthService;
+import client.service.FirebaseService;
 import javafx.animation.FadeTransition;
+import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Node;
+import javafx.scene.Parent;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
-import javafx.scene.control.Label;
-import javafx.scene.layout.StackPane; 
+import javafx.scene.layout.StackPane;
+import javafx.stage.Stage;
 import javafx.util.Duration;
 
 public class LoginController {
 
-    @FXML private StackPane rootPane; 
+    @FXML private StackPane rootPane;
     @FXML private TextField txtEmail;
     @FXML private PasswordField txtPassword;
-    
-    // ĐÃ THÊM: Biến liên kết với dòng chữ báo lỗi trên giao diện
-    @FXML private Label lblError; 
+    @FXML private Label lblError;
+    @FXML private Button btnLogin;
 
     @FXML
     public void initialize() {
-
-        FadeTransition fadeIn =
-            new FadeTransition(
-                Duration.millis(1000),
-                rootPane
-            );
-
+        FadeTransition fadeIn = new FadeTransition(Duration.millis(1000), rootPane);
         fadeIn.setFromValue(0.0);
         fadeIn.setToValue(1.0);
-
         fadeIn.play();
     }
 
     @FXML
     private void handleLoginAction(ActionEvent event) {
+        String enteredEmail    = txtEmail.getText().trim();
+        String enteredPassword = txtPassword.getText().trim();
 
-        String enteredEmail =
-            txtEmail.getText();
-
-        String enteredPassword =
-            txtPassword.getText();
-        
-        // Reset lại chữ trống mỗi khi người dùng bấm nút mới
         lblError.setText("");
 
-        // TÀI KHOẢN ADMIN CỐ ĐỊNH
-        if (
-            enteredEmail.equals("Admin@gmail.com")
-            && enteredPassword.equals("nhom1")
-        ) {
+        if (enteredEmail.isEmpty() || enteredPassword.isEmpty()) {
+            lblError.setText("Vui lòng nhập email và mật khẩu!");
+            lblError.setStyle("-fx-text-fill: #e74c3c;");
+            return;
+        }
 
-            try {
+        // Tài khoản Admin cố định — không cần gọi Firebase
+        if (enteredEmail.equals("Admin@gmail.com") && enteredPassword.equals("nhom1")) {
+            FirebaseService.registeredUsername = "Admin";
+            navigateTo(event, "/client/view/Admin.fxml", "Online Auction System - Admin");
+            return;
+        }
 
-                javafx.fxml.FXMLLoader loader =
-                    new javafx.fxml.FXMLLoader(
-                        getClass().getResource(
-                            "/client/view/Admin.fxml"
-                        )
-                    );
+        // FIX: Chạy AuthService.login() trên background thread
+        // tránh block JavaFX thread gây đơ / không đăng nhập được
+        if (btnLogin != null) btnLogin.setDisable(true);
+        lblError.setText("Đang đăng nhập...");
+        lblError.setStyle("-fx-text-fill: #3498db;");
 
-                javafx.scene.Parent root =
-                    loader.load();
-
-                javafx.stage.Stage stage =
-                    (javafx.stage.Stage)
-                    ((javafx.scene.Node)
-                    event.getSource())
-                    .getScene()
-                    .getWindow();
-
-                stage.getScene().setRoot(root);
-
-                stage.setTitle(
-                    "Online Auction System - Admin"
-                );
-
-            } catch (Exception e) {
-
-                e.printStackTrace();
+        Task<Boolean> loginTask = new Task<>() {
+            @Override
+            protected Boolean call() {
+                return AuthService.login(enteredEmail, enteredPassword);
             }
-        }
+        };
 
-        // ĐĂNG NHẬP USER BÌNH THƯỜNG
-        else if (
-            AuthService.login(
-                enteredEmail,
-                enteredPassword
-            )
-        ) {
-
-            try {
-
-                javafx.fxml.FXMLLoader loader =
-                    new javafx.fxml.FXMLLoader(
-                        getClass().getResource(
-                            "/client/view/ProductList.fxml"
-                        )
-                    );
-
-                javafx.scene.Parent root =
-                    loader.load();
-
-                javafx.stage.Stage stage =
-                    (javafx.stage.Stage)
-                    ((javafx.scene.Node)
-                    event.getSource())
-                    .getScene()
-                    .getWindow();
-
-                stage.getScene().setRoot(root);
-
-                stage.setTitle(
-                    "Online Auction System - Danh sách sản phẩm"
-                );
-
-            } catch (Exception e) {
-
-                e.printStackTrace();
+        loginTask.setOnSucceeded(e -> {
+            if (loginTask.getValue()) {
+                // Lưu email làm username để các màn hình khác dùng
+                FirebaseService.registeredUsername = enteredEmail;
+                navigateTo(event,
+                    "/client/view/ProductList.fxml",
+                    "Online Auction System - Danh sách sản phẩm");
+            } else {
+                lblError.setText("Sai email hoặc mật khẩu! Vui lòng thử lại.");
+                lblError.setStyle("-fx-text-fill: #e74c3c;");
+                if (btnLogin != null) btnLogin.setDisable(false);
             }
-        }
+        });
 
-        else {
+        loginTask.setOnFailed(e -> {
+            lblError.setText("Lỗi kết nối. Kiểm tra lại mạng!");
+            lblError.setStyle("-fx-text-fill: #e74c3c;");
+            if (btnLogin != null) btnLogin.setDisable(false);
+        });
 
-            // HIỆN LỖI MÀU ĐỎ TRỰC TIẾP TRÊN GIAO DIỆN
-            lblError.setText(
-                "Sai email hoặc mật khẩu! Vui lòng thử lại."
-            );
-        }
+        new Thread(loginTask).start();
     }
 
     @FXML
     private void switchToRegister(ActionEvent event) {
+        navigateTo(event, "/client/view/Register.fxml", "Online Auction System - Register");
+    }
 
+    private void navigateTo(ActionEvent event, String fxmlPath, String title) {
         try {
-
-            javafx.fxml.FXMLLoader loader =
-                new javafx.fxml.FXMLLoader(
-                    getClass().getResource(
-                        "/client/view/Register.fxml"
-                    )
-                );
-
-            javafx.scene.Parent registerRoot =
-                loader.load();
-
-            javafx.stage.Stage stage =
-                (javafx.stage.Stage)
-                ((javafx.scene.Node)
-                event.getSource())
-                .getScene()
-                .getWindow();
-
-            stage.getScene().setRoot(registerRoot);
-
-            stage.setTitle(
-                "Online Auction System - Register"
-            );
-
-        } catch (java.io.IOException e) {
-
+            FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
+            Parent root = loader.load();
+            Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
+            stage.getScene().setRoot(root);
+            stage.setTitle(title);
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }

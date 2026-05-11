@@ -19,8 +19,9 @@
         <Label text="REGISTER A NEW ACCOUNT" 
                style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #ffffff;"/>
 
-        <TextField fx:id="txtEmail" 
+        <TextField fx:id="txtUsername" 
                    promptText="Enter your email..."/>
+
         <PasswordField fx:id="txtPassword" 
                        promptText="Enter password (minimum 6 characters)" />
 
