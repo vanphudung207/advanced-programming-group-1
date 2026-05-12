@@ -5,6 +5,7 @@ public class Product {
     private String id;
     private String firebaseKey;
     private String name;
+    private String description;   // ← THÊM MỚI: mô tả chi tiết từ form đăng
     private double currentBid;
     private String timeRemaining;
     private String imagePath;
@@ -18,7 +19,6 @@ public class Product {
     /**
      * endTime: Unix timestamp (mili-giây) lúc phiên kết thúc.
      * Đây là nguồn sự thật duy nhất cho thời gian còn lại.
-     * Không dùng secondsRemaining để tính timer nữa.
      */
     private long endTime = 0L;
 
@@ -30,12 +30,14 @@ public class Product {
     // =========================================================================
     // CONSTRUCTOR ĐẦY ĐỦ (dùng khi load từ Firebase — có endTime)
     // =========================================================================
-    public Product(String id, String name, double currentBid, String timeRemaining,
+    public Product(String id, String name, String description,
+                   double currentBid, String timeRemaining,
                    String imagePath, String sellerUsername, String category,
                    double stepPrice, String status, long endTime) {
         this.id            = id;
         this.firebaseKey   = id;
         this.name          = name;
+        this.description   = description;   // ← THÊM
         this.currentBid    = currentBid;
         this.timeRemaining = timeRemaining;
         this.imagePath     = imagePath;
@@ -46,13 +48,20 @@ public class Product {
         this.endTime       = endTime;
     }
 
-    // Constructor tương thích ngược — dùng khi tạo sản phẩm mới (endTime chưa biết)
+    // Constructor tương thích ngược KHÔNG có description (để không vỡ các chỗ khác)
+    public Product(String id, String name, double currentBid, String timeRemaining,
+                   String imagePath, String sellerUsername, String category,
+                   double stepPrice, String status, long endTime) {
+        this(id, name, null, currentBid, timeRemaining, imagePath, sellerUsername,
+             category, stepPrice, status, endTime);
+    }
+
+    // Constructor tương thích ngược — secondsRemaining
     public Product(String id, String name, double currentBid, String timeRemaining,
                    String imagePath, String sellerUsername, String category,
                    double stepPrice, String status, int secondsRemaining) {
-        this(id, name, currentBid, timeRemaining, imagePath, sellerUsername,
+        this(id, name, null, currentBid, timeRemaining, imagePath, sellerUsername,
              category, stepPrice, status,
-             // Chuyển secondsRemaining → endTime tuyệt đối
              secondsRemaining > 0
                  ? System.currentTimeMillis() + (long) secondsRemaining * 1000
                  : 0L);
@@ -60,28 +69,25 @@ public class Product {
 
     public Product(String id, String name, double currentBid, String timeRemaining,
                    String imagePath, String sellerUsername, String category) {
-        this(id, name, currentBid, timeRemaining, imagePath, sellerUsername, category,
-             0.0, "active", 60);
+        this(id, name, null, currentBid, timeRemaining, imagePath, sellerUsername,
+             category, 0.0, "active", 60);
     }
 
     public Product(String id, String name, double currentBid, String timeRemaining,
                    String imagePath, String sellerUsername) {
-        this(id, name, currentBid, timeRemaining, imagePath, sellerUsername, "Khác",
-             0.0, "active", 60);
+        this(id, name, null, currentBid, timeRemaining, imagePath, sellerUsername,
+             "Khác", 0.0, "active", 60);
     }
 
     // =========================================================================
-    // TIỆN ÍCH TÍNH THỜI GIAN CÒN LẠI TỪ endTime — chính xác dù thoát vào lại
+    // TIỆN ÍCH TÍNH THỜI GIAN CÒN LẠI
     // =========================================================================
-
-    /** Số giây còn lại tính từ thời điểm gọi hàm này (realtime, không drift) */
     public int getSecondsRemainingNow() {
         if ("ended".equals(status) || endTime <= 0) return 0;
         long diff = endTime - System.currentTimeMillis();
         return diff > 0 ? (int) (diff / 1000) : 0;
     }
 
-    /** Phiên đã kết thúc nếu status="ended" HOẶC endTime đã qua */
     public boolean isEnded() {
         if ("ended".equals(status)) return true;
         if (endTime > 0 && System.currentTimeMillis() >= endTime) return true;
@@ -94,6 +100,7 @@ public class Product {
     public String getId()                 { return id; }
     public String getFirebaseKey()        { return firebaseKey; }
     public String getName()               { return name; }
+    public String getDescription()        { return description; }   // ← THÊM
     public double getCurrentBid()         { return currentBid; }
     public String getTimeRemaining()      { return timeRemaining; }
     public String getImagePath()          { return imagePath; }
@@ -110,6 +117,7 @@ public class Product {
     // SETTERS
     // =========================================================================
     public void setFirebaseKey(String k)         { this.firebaseKey = k; }
+    public void setDescription(String d)         { this.description = d; }   // ← THÊM
     public void setCurrentBid(double v)          { this.currentBid = v; }
     public void setStatus(String s)              { this.status = s; }
     public void setEndTime(long t)               { this.endTime = t; }

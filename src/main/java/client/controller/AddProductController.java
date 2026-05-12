@@ -22,7 +22,7 @@ import java.time.ZoneId;
 public class AddProductController {
 
     @FXML private TextField txtName;
-    @FXML private TextArea txtDescription;
+    @FXML private TextArea  txtDescription;
     @FXML private TextField txtStartPrice;
     @FXML private TextField txtStepPrice;
     @FXML private DatePicker dpEndDate;
@@ -46,6 +46,8 @@ public class AddProductController {
     @FXML
     private void handleAddProduct(ActionEvent event) {
         String name          = txtName.getText().trim();
+        // ← LẤY MÔ TẢ TỪ FORM
+        String description   = (txtDescription != null) ? txtDescription.getText().trim() : "";
         String startPriceStr = txtStartPrice.getText().trim();
         String stepPriceStr  = txtStepPrice.getText().trim();
         String category      = cbCategory.getValue();
@@ -77,7 +79,6 @@ public class AddProductController {
                 return;
             }
 
-            // Tính endTime tuyệt đối từ ngày + giờ + phút người dùng chọn
             LocalDateTime endDateTime = LocalDateTime.of(
                 dpEndDate.getValue(),
                 LocalTime.of(Integer.parseInt(hour), Integer.parseInt(minute), 0)
@@ -87,7 +88,6 @@ public class AddProductController {
                 .toInstant()
                 .toEpochMilli();
 
-            // Validate: phải sau thời điểm hiện tại
             if (endTime <= System.currentTimeMillis()) {
                 showAlert(AlertType.WARNING, "Thời gian không hợp lệ",
                     "Thời gian kết thúc phải sau thời điểm hiện tại!");
@@ -99,9 +99,10 @@ public class AddProductController {
             String seller = FirebaseService.registeredUsername != null
                             ? FirebaseService.registeredUsername : "Khách vãng lai";
 
-            // Truyền endTime tuyệt đối — timer sẽ tự tính từ đây
+            // ← CONSTRUCTOR MỚI CÓ description
             Product newProduct = new Product(
-                null, name, startPrice, timeRemaining,
+                null, name, description,
+                startPrice, timeRemaining,
                 selectedImagePath, seller, category,
                 stepPrice, "active", endTime
             );
@@ -129,10 +130,8 @@ public class AddProductController {
         fc.setTitle("Chọn ảnh sản phẩm đấu giá");
         fc.getExtensionFilters().add(
             new FileChooser.ExtensionFilter("Image Files", "*.png", "*.jpg", "*.jpeg"));
-
         Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
         File file = fc.showOpenDialog(stage);
-
         if (file != null) {
             selectedImagePath = file.toURI().toString();
             imgPreview.setImage(new Image(selectedImagePath));

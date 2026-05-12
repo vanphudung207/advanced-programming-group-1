@@ -6,6 +6,7 @@ import com.google.firebase.database.*;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
+import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -25,6 +26,9 @@ import javafx.stage.StageStyle;
 import javafx.util.Duration;
 
 import java.text.NumberFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 
 public class AuctionRoomController {
@@ -43,14 +47,14 @@ public class AuctionRoomController {
     private Product currentProduct;
     private Timeline countdownTimer;
     private boolean auctionEnded = false;
-    private boolean hasBids = false;
+    private boolean hasBids      = false;
 
     // Firebase
     private DatabaseReference auctionRef;
     private ValueEventListener realtimeListener;
 
     // =========================================================================
-    // NHẬN DỮ LIỆU — đọc trạng thái Firebase trước khi làm bất cứ thứ gì
+    // NHẬN DỮ LIỆU
     // =========================================================================
     public void setProductData(Product product) {
         this.currentProduct = product;
@@ -58,11 +62,17 @@ public class AuctionRoomController {
         this.hasBids        = false;
         if (currentProduct == null) return;
 
-        lblProductName.setText(currentProduct.getName());
+        lblProductName.setText(nvl(currentProduct.getName(), "Không có tên"));
         lblCurrentPrice.setText(formatVND(currentProduct.getCurrentBid()));
-        if (lblSellerName != null) lblSellerName.setText(currentProduct.getSellerUsername());
-        if (lblProductDescription != null)
-            lblProductDescription.setText("Thông tin mô tả sẽ được cập nhật sớm...");
+
+        if (lblSellerName != null)
+            lblSellerName.setText(nvl(currentProduct.getSellerUsername(), "Khách vãng lai"));
+
+        if (lblProductDescription != null) {
+            String desc = currentProduct.getDescription();
+            lblProductDescription.setText(
+                (desc != null && !desc.isEmpty()) ? desc : "Người bán chưa cung cấp mô tả chi tiết.");
+        }
 
         try { imgProduct.setImage(new Image(currentProduct.getImagePath(), true)); }
         catch (Exception e) { System.out.println("Lỗi tải ảnh: " + e.getMessage()); }
@@ -75,6 +85,9 @@ public class AuctionRoomController {
             txtBidAmount.setDisable(true);
             txtBidAmount.setPromptText("Bạn không thể tự đấu giá hàng của mình");
         }
+
+        // Tải lịch sử đấu giá từ Firebase trước (chạy background để không đơ UI)
+        loadBidHistoryAsync();
 
         loadAuctionStateFromFirebase();
 
@@ -90,16 +103,34 @@ public class AuctionRoomController {
     }
 
     // =========================================================================
+    // TẢI LỊCH SỬ ĐẤU GIÁ TỪ FIREBASE (background thread)
+    // =========================================================================
+    private void loadBidHistoryAsync() {
+        Task<List<String>> task = new Task<>() {
+            @Override
+            protected List<String> call() {
+                return FirebaseService.loadBidHistory(currentProduct.getFirebaseKey());
+            }
+        };
+        task.setOnSucceeded(e -> {
+            List<String> history = task.getValue();
+            if (history != null && !history.isEmpty()) {
+                // Thêm header phân cách
+                listBidHistory.getItems().add("── Lịch sử trả giá trước đó ──");
+                listBidHistory.getItems().addAll(history);
+                listBidHistory.getItems().add("─────────────────────────────");
+            }
+        });
+        new Thread(task).start();
+    }
+
+    // =========================================================================
     // ĐỌC TRẠNG THÁI TỪ FIREBASE
-    // - Nếu status = "ended" → hiện kết quả ngay
-    // - Nếu active nhưng endTime đã qua → tự kết thúc
-    // - Nếu còn thời gian → bật timer từ endTime
     // =========================================================================
     private void loadAuctionStateFromFirebase() {
         String key = currentProduct.getFirebaseKey();
         if (key == null) {
-            // Không có key → offline, dùng endTime từ Product
-            listBidHistory.getItems().add("Hệ thống: Bắt đầu phiên đấu giá!");
+            listBidHistory.getItems().add(0, "Hệ thống: Bắt đầu phiên đấu giá!");
             startCountdownTimer();
             return;
         }
@@ -108,47 +139,44 @@ public class AuctionRoomController {
         auctionRef.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot snapshot) {
-                String status       = snapshot.child("status").getValue(String.class);
-                Long   fbEndTime    = snapshot.child("endTime").getValue(Long.class);
-                Double savedBid     = snapshot.child("currentBid").getValue(Double.class);
-                String savedBidder  = snapshot.child("highestBidder").getValue(String.class);
-                String savedPhone   = snapshot.child("highestBidderPhone").getValue(String.class);
-                String savedEmail   = snapshot.child("highestBidderEmail").getValue(String.class);
+                String status      = snapshot.child("status").getValue(String.class);
+                Long   fbEndTime   = snapshot.child("endTime").getValue(Long.class);
+                Double savedBid    = snapshot.child("currentBid").getValue(Double.class);
+                String savedBidder = snapshot.child("highestBidder").getValue(String.class);
+                String savedPhone  = snapshot.child("highestBidderPhone").getValue(String.class);
+                String savedEmail  = snapshot.child("highestBidderEmail").getValue(String.class);
+                String fbDesc      = snapshot.child("description").getValue(String.class);
 
                 Platform.runLater(() -> {
-                    // Đồng bộ giá và người thắng từ Firebase
+                    if (fbDesc != null && !fbDesc.isEmpty() && lblProductDescription != null) {
+                        lblProductDescription.setText(fbDesc);
+                        currentProduct.setDescription(fbDesc);
+                    }
                     if (savedBid != null && savedBid > currentProduct.getCurrentBid()) {
                         currentProduct.setCurrentBid(savedBid);
                         lblCurrentPrice.setText(formatVND(savedBid));
                     }
-                    if (savedBidder != null) {
+                    if (savedBidder != null && !savedBidder.isEmpty()) {
                         currentProduct.setHighestBidder(savedBidder);
                         hasBids = true;
                     }
                     if (savedPhone != null) currentProduct.setHighestBidderPhone(savedPhone);
                     if (savedEmail != null) currentProduct.setHighestBidderEmail(savedEmail);
-
-                    // Đồng bộ endTime từ Firebase (nguồn sự thật tuyệt đối)
                     if (fbEndTime != null && fbEndTime > 0)
                         currentProduct.setEndTime(fbEndTime);
 
-                    // Kiểm tra trạng thái
                     if ("ended".equals(status)) {
                         auctionEnded = true;
                         lblTimer.setText("Đã đóng!");
                         txtBidAmount.setDisable(true);
                         btnSubmitBid.setDisable(true);
-                        listBidHistory.getItems().add("Hệ thống: Phiên đấu giá này đã kết thúc.");
+                        listBidHistory.getItems().add(0, "Hệ thống: Phiên đấu giá này đã kết thúc.");
                         showAuctionResult();
-
                     } else if (currentProduct.isEnded()) {
-                        // endTime đã qua nhưng Firebase chưa kịp update status
                         auctionEnded = true;
                         endAuction();
-
                     } else {
-                        // Phiên còn đang chạy
-                        listBidHistory.getItems().add("Hệ thống: Bắt đầu phiên đấu giá!");
+                        listBidHistory.getItems().add(0, "Hệ thống: Bắt đầu phiên đấu giá!");
                         startCountdownTimer();
                         startRealtimeListener();
                     }
@@ -157,7 +185,7 @@ public class AuctionRoomController {
             @Override
             public void onCancelled(DatabaseError error) {
                 Platform.runLater(() -> {
-                    listBidHistory.getItems().add("⚠️ Không kết nối Firebase. Chạy ở chế độ offline.");
+                    listBidHistory.getItems().add(0, "⚠️ Không kết nối Firebase. Chạy ở chế độ offline.");
                     startCountdownTimer();
                 });
             }
@@ -165,10 +193,11 @@ public class AuctionRoomController {
     }
 
     // =========================================================================
-    // REALTIME LISTENER: Đồng bộ giá + endTime từ người dùng khác
+    // REALTIME LISTENER — nhận bid mới từ người khác theo thời gian thực
     // =========================================================================
     private void startRealtimeListener() {
         if (auctionRef == null) return;
+
         realtimeListener = new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot snapshot) {
@@ -180,30 +209,44 @@ public class AuctionRoomController {
                 Long   fbEndTime = snapshot.child("endTime").getValue(Long.class);
 
                 Platform.runLater(() -> {
+                    // Đồng bộ khi auction kết thúc
                     if ("ended".equals(status) && !auctionEnded) {
                         if (countdownTimer != null) countdownTimer.stop();
                         auctionEnded = true;
+                        if (bidder != null && !bidder.isEmpty()) {
+                            currentProduct.setHighestBidder(bidder);
+                            hasBids = true;
+                        }
+                        if (newBid != null && newBid > currentProduct.getCurrentBid()) {
+                            currentProduct.setCurrentBid(newBid);
+                            lblCurrentPrice.setText(formatVND(newBid));
+                        }
+                        if (phone != null) currentProduct.setHighestBidderPhone(phone);
+                        if (email != null) currentProduct.setHighestBidderEmail(email);
                         endAuction();
                         return;
                     }
 
-                    // Đồng bộ endTime mới (anti-sniping từ người khác)
-                    if (fbEndTime != null && fbEndTime > currentProduct.getEndTime()) {
+                    // Đồng bộ endTime mới (anti-sniping)
+                    if (fbEndTime != null && fbEndTime > currentProduct.getEndTime())
                         currentProduct.setEndTime(fbEndTime);
-                        // Timer sẽ tự tính lại từ endTime mới ở tick tiếp theo
-                    }
 
-                    // Đồng bộ giá mới
+                    // Nhận bid mới từ người khác
                     if (newBid != null && newBid > currentProduct.getCurrentBid()) {
                         currentProduct.setCurrentBid(newBid);
                         lblCurrentPrice.setText(formatVND(newBid));
                         hasBids = true;
-                        if (bidder != null) {
+
+                        if (bidder != null && !bidder.isEmpty()) {
                             currentProduct.setHighestBidder(bidder);
                             String me = FirebaseService.registeredUsername;
-                            if (me == null || !me.equals(bidder))
+                            if (me == null || !me.equals(bidder)) {
+                                // Người KHÁC vừa trả giá → hiện lên với timestamp hiện tại
+                                String timeStr = nowTimestamp();
                                 listBidHistory.getItems().add(0,
-                                    "🔔 " + bidder + " vừa trả: " + formatVND(newBid));
+                                    "🔔 [" + timeStr + "] " + bidder
+                                    + " trả: " + formatVND(newBid));
+                            }
                         }
                         if (phone != null) currentProduct.setHighestBidderPhone(phone);
                         if (email != null) currentProduct.setHighestBidderEmail(email);
@@ -219,22 +262,19 @@ public class AuctionRoomController {
     }
 
     // =========================================================================
-    // TIMER — tính từ endTime tuyệt đối, không bao giờ drift dù thoát vào lại
+    // TIMER
     // =========================================================================
     private void startCountdownTimer() {
         updateTimerDisplay();
         countdownTimer = new Timeline(new KeyFrame(Duration.seconds(1), e -> {
             if (auctionEnded) return;
-
-            // FIX: tính lại từ endTime mỗi tick → chính xác tuyệt đối
             int secsLeft = currentProduct.getSecondsRemainingNow();
             updateTimerDisplay(secsLeft);
-
             if (secsLeft <= 0) {
                 countdownTimer.stop();
                 if (!auctionEnded) {
                     auctionEnded = true;
-                    endAuction();
+                    syncFinalStateAndEnd();
                 }
             }
         }));
@@ -243,34 +283,68 @@ public class AuctionRoomController {
     }
 
     // =========================================================================
-    // KẾT THÚC ĐẤU GIÁ — ghi "ended" lên Firebase
+    // ĐỌC LẠI FIREBASE LẦN CUỐI TRƯỚC KHI SHOW KẾT QUẢ
+    // =========================================================================
+    private void syncFinalStateAndEnd() {
+        String key = currentProduct.getFirebaseKey();
+        if (key == null) { endAuction(); return; }
+        FirebaseService.getProductRef(key).addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot snapshot) {
+                String finalBidder = snapshot.child("highestBidder").getValue(String.class);
+                Double finalBid    = snapshot.child("currentBid").getValue(Double.class);
+                String finalPhone  = snapshot.child("highestBidderPhone").getValue(String.class);
+                String finalEmail  = snapshot.child("highestBidderEmail").getValue(String.class);
+                Platform.runLater(() -> {
+                    if (finalBidder != null && !finalBidder.isEmpty()) {
+                        currentProduct.setHighestBidder(finalBidder);
+                        hasBids = true;
+                    }
+                    if (finalBid != null && finalBid > currentProduct.getCurrentBid()) {
+                        currentProduct.setCurrentBid(finalBid);
+                        lblCurrentPrice.setText(formatVND(finalBid));
+                    }
+                    if (finalPhone != null) currentProduct.setHighestBidderPhone(finalPhone);
+                    if (finalEmail != null) currentProduct.setHighestBidderEmail(finalEmail);
+                    endAuction();
+                });
+            }
+            @Override
+            public void onCancelled(DatabaseError error) {
+                Platform.runLater(() -> endAuction());
+            }
+        });
+    }
+
+    // =========================================================================
+    // KẾT THÚC ĐẤU GIÁ
     // =========================================================================
     private void endAuction() {
         lblTimer.setText("Đã đóng!");
         txtBidAmount.setDisable(true);
         btnSubmitBid.setDisable(true);
-        // Ghi trạng thái kết thúc lên Firebase → lần sau vào lại sẽ thấy ngay
         FirebaseService.markAuctionEnded(currentProduct.getFirebaseKey());
         showAuctionResult();
     }
 
     private void showAuctionResult() {
-        if (!hasBids || currentProduct.getHighestBidder() == null) {
+        if (!hasBids || currentProduct.getHighestBidder() == null
+                || currentProduct.getHighestBidder().isEmpty()) {
             listBidHistory.getItems().add(0, "Hệ thống: Phiên kết thúc — không có ai trả giá.");
             Platform.runLater(this::showNoWinnerPopup);
             return;
         }
-        String winner  = currentProduct.getHighestBidder();
-        String phone   = nvl(currentProduct.getHighestBidderPhone(), "Chưa cập nhật");
-        String email   = nvl(currentProduct.getHighestBidderEmail(), "Chưa cập nhật");
-        String price   = formatVND(currentProduct.getCurrentBid());
+        String winner = currentProduct.getHighestBidder();
+        String phone  = nvl(currentProduct.getHighestBidderPhone(), "Chưa cập nhật");
+        String email  = nvl(currentProduct.getHighestBidderEmail(), "Chưa cập nhật");
+        String price  = formatVND(currentProduct.getCurrentBid());
         listBidHistory.getItems().add(0, "🏆 " + winner + " đã thắng với giá " + price);
         boolean isSeller = isCurrentUserSeller();
         Platform.runLater(() -> showWinnerPopup(winner, price, phone, email, isSeller));
     }
 
     // =========================================================================
-    // GỬI GIÁ
+    // GỬI GIÁ — lưu lịch sử lên Firebase kèm timestamp
     // =========================================================================
     @FXML
     private void handleBidAction(ActionEvent event) {
@@ -280,7 +354,8 @@ public class AuctionRoomController {
         }
         String inputStr = txtBidAmount.getText().trim();
         if (inputStr.isEmpty()) {
-            listBidHistory.getItems().add(0, "Lỗi: Vui lòng nhập số tiền."); return;
+            listBidHistory.getItems().add(0, "Lỗi: Vui lòng nhập số tiền.");
+            return;
         }
         try {
             double bid     = Double.parseDouble(inputStr);
@@ -305,23 +380,32 @@ public class AuctionRoomController {
                 currentProduct.setHighestBidderPhone(FirebaseService.getUserPhone(me));
             }
             lblCurrentPrice.setText(formatVND(bid));
-            listBidHistory.getItems().add(0, "✅ Bạn trả giá: " + formatVND(bid));
+
+            // Hiện lên lịch sử local ngay lập tức với timestamp
+            String timeStr = nowTimestamp();
+            listBidHistory.getItems().add(0,
+                "✅ [" + timeStr + "] Bạn (" + nvl(me, "Ẩn danh")
+                + ") trả: " + formatVND(bid));
             txtBidAmount.clear();
 
-            // Lưu giá lên Firebase
+            // Lưu lên Firebase: cập nhật giá + lưu vào bidHistory
             FirebaseService.updateBid(
                 currentProduct.getFirebaseKey(), bid, me,
                 currentProduct.getHighestBidderPhone(),
                 currentProduct.getHighestBidderEmail()
             );
+            // ← LƯU VÀO LỊCH SỬ FIREBASE (persistent)
+            FirebaseService.saveBidHistory(
+                currentProduct.getFirebaseKey(),
+                nvl(me, "Ẩn danh"),
+                bid
+            );
 
-            // FIX ANTI-SNIPING: cộng 10s vào endTime tuyệt đối trên Firebase
-            // → Tất cả client đều thấy thời gian mới qua realtime listener
+            // Anti-sniping
             int secsLeft = currentProduct.getSecondsRemainingNow();
             if (!auctionEnded && secsLeft > 0 && secsLeft <= 10) {
                 FirebaseService.extendEndTime(currentProduct.getFirebaseKey(), 10);
                 listBidHistory.getItems().add(0, "🔥 Anti-sniping: +10 giây!");
-                // endTime mới sẽ được cập nhật qua realtimeListener
             }
 
         } catch (NumberFormatException e) {
@@ -338,12 +422,64 @@ public class AuctionRoomController {
             if (countdownTimer != null) countdownTimer.stop();
             if (auctionRef != null && realtimeListener != null)
                 auctionRef.removeEventListener(realtimeListener);
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/client/view/ProductList.fxml"));
+            FXMLLoader loader = new FXMLLoader(
+                getClass().getResource("/client/view/ProductList.fxml"));
             Parent root = loader.load();
             Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
             stage.getScene().setRoot(root);
             stage.setTitle("Online Auction System - Danh sách sản phẩm");
         } catch (Exception e) { e.printStackTrace(); }
+    }
+
+    // =========================================================================
+    // XEM CHI TIẾT
+    // =========================================================================
+    @FXML
+    private void handleShowDetails(ActionEvent event) {
+        Stage d = new Stage();
+        d.initModality(Modality.APPLICATION_MODAL);
+        d.setTitle("Thông tin chi tiết sản phẩm");
+        VBox layout = new VBox(15);
+        layout.setStyle("-fx-padding:25;-fx-background-color:#ffffff;");
+        layout.setAlignment(Pos.TOP_LEFT);
+
+        String pName     = nvl(currentProduct.getName(),           "Không có");
+        String pSeller   = nvl(currentProduct.getSellerUsername(), "Không có");
+        String pCategory = nvl(currentProduct.getCategory(),       "Không có");
+        String pDesc     = currentProduct.getDescription();
+        if (pDesc == null || pDesc.isEmpty()) pDesc = "Người bán chưa cung cấp mô tả.";
+        String pPrice = formatVND(currentProduct.getCurrentBid());
+        String pStep  = formatVND(currentProduct.getStepPrice());
+        String pTime  = nvl(currentProduct.getTimeRemaining(), "Không có");
+
+        layout.getChildren().addAll(
+            lbl("📋 CHI TIẾT SẢN PHẨM",
+                "-fx-font-size:20px;-fx-font-weight:bold;-fx-text-fill:#2c3e50;"),
+            lbl("🏷  Tên sản phẩm: " + pName,
+                "-fx-font-size:16px;-fx-font-weight:bold;-fx-text-fill:#2c3e50;"),
+            lbl("📂 Danh mục: " + pCategory,
+                "-fx-font-size:15px;-fx-text-fill:#8e44ad;"),
+            lbl("👤 Người đăng bán: " + pSeller,
+                "-fx-font-size:15px;-fx-text-fill:#e67e22;"),
+            lbl("💰 Giá hiện tại: " + pPrice,
+                "-fx-font-size:15px;-fx-font-weight:bold;-fx-text-fill:#e74c3c;"),
+            lbl("📈 Bước giá tối thiểu: " + pStep,
+                "-fx-font-size:15px;-fx-text-fill:#27ae60;"),
+            lbl("⏰ " + pTime,
+                "-fx-font-size:14px;-fx-text-fill:#7f8c8d;"),
+            lbl("📝 Mô tả chi tiết:",
+                "-fx-font-size:15px;-fx-font-weight:bold;-fx-text-fill:#2c3e50;"),
+            lbl(pDesc, "-fx-font-size:14px;-fx-text-fill:#34495e;")
+        );
+
+        Button btnClose = new Button("ĐÓNG");
+        btnClose.setStyle("-fx-background-color:#e74c3c;-fx-text-fill:white;"
+                        + "-fx-font-weight:bold;-fx-padding:8 20;-fx-cursor:hand;");
+        btnClose.setOnAction(e -> d.close());
+        layout.getChildren().add(btnClose);
+        d.setScene(new Scene(layout, 480, 480));
+        d.centerOnScreen();
+        d.showAndWait();
     }
 
     // =========================================================================
@@ -362,6 +498,12 @@ public class AuctionRoomController {
         if (secs <= 0) { lblTimer.setText(" Còn lại: 00:00:00"); return; }
         lblTimer.setText(String.format(" Còn lại: %02d:%02d:%02d",
             secs / 3600, (secs % 3600) / 60, secs % 60));
+    }
+
+    /** Timestamp hiện tại dạng "HH:mm:ss dd/MM/yyyy" */
+    private String nowTimestamp() {
+        return new SimpleDateFormat("HH:mm:ss dd/MM/yyyy", Locale.getDefault())
+            .format(new Date());
     }
 
     private String formatVND(double amount) {
@@ -384,25 +526,32 @@ public class AuctionRoomController {
                    + "-fx-border-radius:15;-fx-border-color:#f1c40f;-fx-border-width:4;");
         DropShadow sh = new DropShadow(); sh.setColor(Color.rgb(0,0,0,.25)); box.setEffect(sh);
 
-        String pName = currentProduct != null ? currentProduct.getName() : "Sản phẩm";
+        String pName = nvl(currentProduct != null ? currentProduct.getName() : null, "Sản phẩm");
         box.getChildren().addAll(
-            lbl("🏆 KẾT THÚC PHIÊN ĐẤU GIÁ!", "-fx-font-size:26px;-fx-font-weight:bold;-fx-text-fill:#f39c12;"),
-            lbl("Sản phẩm: " + pName,           "-fx-font-size:18px;-fx-text-fill:#34495e;"),
-            lbl("Người chiến thắng: " + winner,  "-fx-font-size:22px;-fx-font-weight:bold;-fx-text-fill:#27ae60;"),
-            lbl("Với mức giá: " + price,          "-fx-font-size:24px;-fx-font-weight:bold;-fx-text-fill:#e74c3c;")
+            lbl("🏆 KẾT THÚC PHIÊN ĐẤU GIÁ!",
+                "-fx-font-size:26px;-fx-font-weight:bold;-fx-text-fill:#f39c12;"),
+            lbl("Sản phẩm: " + pName,   "-fx-font-size:18px;-fx-text-fill:#34495e;"),
+            lbl("Người chiến thắng: " + winner,
+                "-fx-font-size:22px;-fx-font-weight:bold;-fx-text-fill:#27ae60;"),
+            lbl("Với mức giá: " + price,
+                "-fx-font-size:24px;-fx-font-weight:bold;-fx-text-fill:#e74c3c;")
         );
         if (isSeller) {
             VBox contact = new VBox(5); contact.setAlignment(Pos.CENTER);
-            contact.setStyle("-fx-background-color:#fdf2e9;-fx-padding:15;-fx-background-radius:8;"
-                           + "-fx-border-color:#e67e22;-fx-border-radius:8;");
+            contact.setStyle("-fx-background-color:#fdf2e9;-fx-padding:15;"
+                           + "-fx-background-radius:8;-fx-border-color:#e67e22;-fx-border-radius:8;");
             contact.getChildren().addAll(
-                lbl("THÔNG TIN LIÊN HỆ NGƯỜI MUA:", "-fx-font-size:14px;-fx-font-weight:bold;-fx-text-fill:#d35400;"),
-                lbl("📞 SĐT: " + phone,             "-fx-font-size:16px;-fx-font-weight:bold;-fx-text-fill:#2c3e50;"),
-                lbl("📧 Email: " + email,            "-fx-font-size:16px;-fx-font-weight:bold;-fx-text-fill:#2c3e50;")
+                lbl("THÔNG TIN LIÊN HỆ NGƯỜI MUA:",
+                    "-fx-font-size:14px;-fx-font-weight:bold;-fx-text-fill:#d35400;"),
+                lbl("📞 SĐT: " + phone,
+                    "-fx-font-size:16px;-fx-font-weight:bold;-fx-text-fill:#2c3e50;"),
+                lbl("📧 Email: " + email,
+                    "-fx-font-size:16px;-fx-font-weight:bold;-fx-text-fill:#2c3e50;")
             );
             box.getChildren().add(contact);
         } else {
-            box.getChildren().add(lbl("🔒 Thông tin liên lạc đã được bảo mật.\n(Chỉ người đăng bán mới có thể xem)",
+            box.getChildren().add(lbl(
+                "🔒 Thông tin liên lạc đã được bảo mật.\n(Chỉ người đăng bán mới có thể xem)",
                 "-fx-font-size:13px;-fx-text-fill:#7f8c8d;-fx-font-style:italic;"));
         }
         Button btnOk = new Button("XÁC NHẬN");
@@ -425,11 +574,13 @@ public class AuctionRoomController {
         box.setStyle("-fx-background-color:white;-fx-padding:40;-fx-background-radius:15;"
                    + "-fx-border-radius:15;-fx-border-color:#95a5a6;-fx-border-width:4;");
         DropShadow sh = new DropShadow(); sh.setColor(Color.rgb(0,0,0,.25)); box.setEffect(sh);
-        String pName = currentProduct != null ? currentProduct.getName() : "Sản phẩm";
+        String pName = nvl(currentProduct != null ? currentProduct.getName() : null, "Sản phẩm");
         box.getChildren().addAll(
-            lbl("PHIÊN ĐẤU GIÁ ĐÃ KẾT THÚC",      "-fx-font-size:24px;-fx-font-weight:bold;-fx-text-fill:#7f8c8d;"),
-            lbl("Sản phẩm: " + pName,                "-fx-font-size:18px;-fx-text-fill:#34495e;"),
-            lbl("Không có ai trả giá trong phiên.", "-fx-font-size:20px;-fx-font-weight:bold;-fx-text-fill:#e74c3c;")
+            lbl("PHIÊN ĐẤU GIÁ ĐÃ KẾT THÚC",
+                "-fx-font-size:24px;-fx-font-weight:bold;-fx-text-fill:#7f8c8d;"),
+            lbl("Sản phẩm: " + pName,   "-fx-font-size:18px;-fx-text-fill:#34495e;"),
+            lbl("Không có ai trả giá trong phiên.",
+                "-fx-font-size:20px;-fx-font-weight:bold;-fx-text-fill:#e74c3c;")
         );
         Button btnOk = new Button("ĐÓNG");
         btnOk.setStyle("-fx-background-color:#7f8c8d;-fx-text-fill:white;-fx-font-weight:bold;"
@@ -440,43 +591,19 @@ public class AuctionRoomController {
         popup.setScene(sc); popup.centerOnScreen(); popup.showAndWait();
     }
 
-    // =========================================================================
-    // XEM CHI TIẾT, HOVER
-    // =========================================================================
-    @FXML
-    private void handleShowDetails(ActionEvent event) {
-        Stage d = new Stage(); d.initModality(Modality.APPLICATION_MODAL);
-        d.setTitle("Thông tin chi tiết sản phẩm");
-        VBox layout = new VBox(15);
-        layout.setStyle("-fx-padding:25;-fx-background-color:#ffffff;");
-        layout.setAlignment(Pos.TOP_LEFT);
-        String pName   = currentProduct != null ? currentProduct.getName() : "Không có";
-        String pSeller = currentProduct != null ? currentProduct.getSellerUsername() : "Không có";
-        layout.getChildren().addAll(
-            lbl("CHI TIẾT SẢN PHẨM",        "-fx-font-size:20px;-fx-font-weight:bold;-fx-text-fill:#2c3e50;"),
-            lbl("Tên sản phẩm: " + pName,   "-fx-font-size:16px;-fx-text-fill:#34495e;-fx-font-weight:bold;"),
-            lbl("Người đăng bán: " + pSeller,"-fx-font-size:16px;-fx-text-fill:#e67e22;"),
-            lbl("Mô tả đầy đủ:\nNgười bán chưa cung cấp thêm thông tin.",
-                "-fx-font-size:15px;-fx-text-fill:#7f8c8d;")
-        );
-        Button btnClose = new Button("ĐÓNG");
-        btnClose.setStyle("-fx-background-color:#e74c3c;-fx-text-fill:white;"
-                        + "-fx-font-weight:bold;-fx-padding:8 20;-fx-cursor:hand;");
-        btnClose.setOnAction(e -> d.close());
-        layout.getChildren().add(btnClose);
-        d.setScene(new Scene(layout, 450, 350)); d.centerOnScreen(); d.showAndWait();
-    }
-
     @FXML private void handleMouseEnter() {
         if (btnShowDetails != null)
-            btnShowDetails.setStyle("-fx-background-color:#2980b9;-fx-text-fill:white;"
-                + "-fx-font-weight:bold;-fx-padding:8px 15px;-fx-background-radius:5px;-fx-cursor:hand;"
+            btnShowDetails.setStyle(
+                "-fx-background-color:#2980b9;-fx-text-fill:white;-fx-font-weight:bold;"
+                + "-fx-padding:8px 15px;-fx-background-radius:5px;-fx-cursor:hand;"
                 + "-fx-effect:dropshadow(three-pass-box,rgba(41,128,185,0.8),15,0,0,5);");
     }
+
     @FXML private void handleMouseExit() {
         if (btnShowDetails != null)
-            btnShowDetails.setStyle("-fx-background-color:#3498db;-fx-text-fill:white;"
-                + "-fx-font-weight:bold;-fx-padding:8px 15px;-fx-background-radius:5px;-fx-cursor:hand;");
+            btnShowDetails.setStyle(
+                "-fx-background-color:#3498db;-fx-text-fill:white;-fx-font-weight:bold;"
+                + "-fx-padding:8px 15px;-fx-background-radius:5px;-fx-cursor:hand;");
     }
 
     private Label lbl(String text, String style) {
