@@ -55,7 +55,12 @@ public class ProductListController {
         clock.play();
 
         if (cbSort != null) {
-            cbSort.getItems().addAll("Mặc định", "Giá: Thấp đến Cao", "Giá: Cao đến Thấp");
+            cbSort.getItems().addAll(
+                "Mặc định",
+                "Đang đấu giá trước",
+                "Giá: Thấp đến Cao",
+                "Giá: Cao đến Thấp"
+            );
             cbSort.setValue("Mặc định");
         }
 
@@ -76,7 +81,15 @@ public class ProductListController {
         if (currentDisplayedProducts == null || currentDisplayedProducts.isEmpty()) return;
         List<Product> sorted = new ArrayList<>(currentDisplayedProducts);
         String v = cbSort.getValue();
-        if ("Giá: Thấp đến Cao".equals(v))
+        if ("Đang đấu giá trước".equals(v)) {
+            sorted.sort((a, b) -> {
+                int statusCompare = Boolean.compare(a.isEnded(), b.isEnded());
+                if (statusCompare != 0) return statusCompare;
+                if (!a.isEnded())
+                    return Long.compare(a.getEndTime(), b.getEndTime());
+                return Long.compare(b.getEndTime(), a.getEndTime());
+            });
+        } else if ("Giá: Thấp đến Cao".equals(v))
             sorted.sort((a, b) -> Double.compare(a.getCurrentBid(), b.getCurrentBid()));
         else if ("Giá: Cao đến Thấp".equals(v))
             sorted.sort((a, b) -> Double.compare(b.getCurrentBid(), a.getCurrentBid()));

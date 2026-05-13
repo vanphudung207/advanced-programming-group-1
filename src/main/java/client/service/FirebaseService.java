@@ -20,6 +20,44 @@ public class FirebaseService {
         return FirebaseDatabase.getInstance(BASE_URL).getReference();
     }
 
+    public static class BidResult {
+        public final boolean success;
+        public final String message;
+        public final double currentBid;
+        public final String highestBidder;
+        public final String highestBidderPhone;
+        public final String highestBidderEmail;
+        public final long endTime;
+        public final boolean extended;
+
+        public BidResult(boolean success, String message, double currentBid,
+                         String highestBidder, String highestBidderPhone,
+                         String highestBidderEmail, long endTime,
+                         boolean extended) {
+            this.success = success;
+            this.message = message;
+            this.currentBid = currentBid;
+            this.highestBidder = highestBidder;
+            this.highestBidderPhone = highestBidderPhone;
+            this.highestBidderEmail = highestBidderEmail;
+            this.endTime = endTime;
+            this.extended = extended;
+        }
+    }
+
+    public static class BidHistoryEntry {
+        private final String key;
+        private final String line;
+
+        public BidHistoryEntry(String key, String line) {
+            this.key = key;
+            this.line = line;
+        }
+
+        public String getKey() { return key; }
+        public String getLine() { return line; }
+    }
+
     // ==============================================================
     // [GIỮ NGUYÊN] REST API cũ
     // ==============================================================
@@ -46,7 +84,10 @@ public class FirebaseService {
                 @Override public void onDataChange(DataSnapshot snapshot) {
                     if (snapshot.exists()) { latch.countDown(); return; }
                     ref.child("password").setValue(password, (error, r) -> {
-                        if (error == null) { ref.child("phone").setValueAsync(phone); success[0] = true; }
+                        if (error == null) {
+                            ref.child("phone").setValueAsync(phone);
+                            success[0] = true;
+                        }
                         latch.countDown();
                     });
                 }
@@ -63,16 +104,17 @@ public class FirebaseService {
         try {
             CountDownLatch latch = new CountDownLatch(1);
             boolean[] ok = new boolean[1];
-            getDB().child("users").child(username).addListenerForSingleValueEvent(new ValueEventListener() {
-                @Override public void onDataChange(DataSnapshot s) {
-                    if (s.exists()) {
-                        String dbPass = s.child("password").getValue(String.class);
-                        if (password.equals(dbPass)) ok[0] = true;
+            getDB().child("users").child(username)
+                .addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override public void onDataChange(DataSnapshot s) {
+                        if (s.exists()) {
+                            String dbPass = s.child("password").getValue(String.class);
+                            if (password.equals(dbPass)) ok[0] = true;
+                        }
+                        latch.countDown();
                     }
-                    latch.countDown();
-                }
-                @Override public void onCancelled(DatabaseError e) { latch.countDown(); }
-            });
+                    @Override public void onCancelled(DatabaseError e) { latch.countDown(); }
+                });
             latch.await(); return ok[0];
         } catch (Exception e) { return false; }
     }
@@ -84,14 +126,15 @@ public class FirebaseService {
         try {
             CountDownLatch latch = new CountDownLatch(1);
             String[] phone = {"Chưa cập nhật"};
-            getDB().child("users").child(username).addListenerForSingleValueEvent(new ValueEventListener() {
-                @Override public void onDataChange(DataSnapshot s) {
-                    if (s.exists() && s.hasChild("phone"))
-                        phone[0] = s.child("phone").getValue(String.class);
-                    latch.countDown();
-                }
-                @Override public void onCancelled(DatabaseError e) { latch.countDown(); }
-            });
+            getDB().child("users").child(username)
+                .addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override public void onDataChange(DataSnapshot s) {
+                        if (s.exists() && s.hasChild("phone"))
+                            phone[0] = s.child("phone").getValue(String.class);
+                        latch.countDown();
+                    }
+                    @Override public void onCancelled(DatabaseError e) { latch.countDown(); }
+                });
             latch.await(); return phone[0];
         } catch (Exception e) { return "Chưa cập nhật"; }
     }
@@ -165,18 +208,15 @@ public class FirebaseService {
                         if (endTime == null || endTime == 0) {
                             Long oldSecs = doc.child("secondsRemaining").getValue(Long.class);
                             endTime = (oldSecs != null && oldSecs > 0)
-                                ? System.currentTimeMillis() + oldSecs * 1000
-                                : 0L;
+                                ? System.currentTimeMillis() + oldSecs * 1000 : 0L;
                         }
 
                         Product p = new Product(
                             id, name, description,
                             currentBid != null ? currentBid : 0.0,
-                            timeRemaining, imagePath, sellerUsername,
-                            category,
+                            timeRemaining, imagePath, sellerUsername, category,
                             stepPrice != null ? stepPrice : 0.0,
-                            status != null ? status : "active",
-                            endTime
+                            status != null ? status : "active", endTime
                         );
                         p.setFirebaseKey(firebaseKey);
                         p.setHighestBidder(highestBidder);
@@ -215,14 +255,124 @@ public class FirebaseService {
     // ==============================================================
     // 7. CẬP NHẬT GIÁ
     // ==============================================================
-    public static void updateBid(String key, double bid, String bidder,
-                                  String phone, String email) {
-        if (key == null) return;
+    public static BidResult placeBid(String key, double bid, String bidder,
+                                     String phone, String email) {
+        if (key == null || key.isEmpty()) {
+            return new BidResult(false, "Không tìm thấy sản phẩm.", 0,
+                null, null, null, 0L, false);
+        }
+        if (bidder == null || bidder.isEmpty()) {
+            return new BidResult(false, "Bạn cần đăng nhập để trả giá.", 0,
+                null, null, null, 0L, false);
+        }
+
         DatabaseReference ref = getDB().child("products").child(key);
-        ref.child("currentBid").setValueAsync(bid);
-        ref.child("highestBidder").setValueAsync(bidder);
-        if (phone != null) ref.child("highestBidderPhone").setValueAsync(phone);
-        if (email != null) ref.child("highestBidderEmail").setValueAsync(email);
+        String historyKey = ref.child("bidHistory").push().getKey();
+        CountDownLatch latch = new CountDownLatch(1);
+        BidResult[] result = new BidResult[] {
+            new BidResult(false, "Không thể gửi giá. Vui lòng thử lại.", 0,
+                null, null, null, 0L, false)
+        };
+        String[] rejectReason = {result[0].message};
+        boolean[] extendedInTransaction = {false};
+
+        ref.runTransaction(new Transaction.Handler() {
+            @Override
+            public Transaction.Result doTransaction(MutableData data) {
+                if (data.getValue() == null) {
+                    rejectReason[0] = "Sản phẩm không tồn tại.";
+                    return Transaction.abort();
+                }
+
+                String status = data.child("status").getValue(String.class);
+                Long endTimeObj = data.child("endTime").getValue(Long.class);
+                long now = System.currentTimeMillis();
+                long endTime = endTimeObj != null ? endTimeObj : 0L;
+                if ("ended".equals(status) || endTime <= now) {
+                    rejectReason[0] = "Phiên đấu giá đã kết thúc.";
+                    return Transaction.abort();
+                }
+
+                String seller = data.child("sellerUsername").getValue(String.class);
+                if (seller != null && seller.equals(bidder)) {
+                    rejectReason[0] = "Bạn không thể tự đấu giá hàng của mình.";
+                    return Transaction.abort();
+                }
+
+                Double currentObj = data.child("currentBid").getValue(Double.class);
+                Double stepObj = data.child("stepPrice").getValue(Double.class);
+                double current = currentObj != null ? currentObj : 0.0;
+                double step = stepObj != null ? stepObj : 0.0;
+                if (step > 0 && bid < current + step) {
+                    rejectReason[0] = "Giá tối thiểu là "
+                        + formatVNDStatic(current + step)
+                        + " (bước giá: " + formatVNDStatic(step) + ")";
+                    return Transaction.abort();
+                }
+                if (bid <= current) {
+                    rejectReason[0] = "Giá phải cao hơn " + formatVNDStatic(current);
+                    return Transaction.abort();
+                }
+
+                long newEndTime = endTime;
+                extendedInTransaction[0] = false;
+                if (endTime - now > 0 && endTime - now <= 10_000L) {
+                    newEndTime = endTime + 10_000L;
+                    data.child("endTime").setValue(newEndTime);
+                    extendedInTransaction[0] = true;
+                }
+
+                data.child("currentBid").setValue(bid);
+                data.child("highestBidder").setValue(bidder);
+                data.child("highestBidderPhone").setValue(phone);
+                data.child("highestBidderEmail").setValue(email);
+
+                MutableData history = data.child("bidHistory").child(historyKey);
+                history.child("bidder").setValue(bidder);
+                history.child("amount").setValue(bid);
+                history.child("timestamp").setValue(ServerValue.TIMESTAMP);
+
+                return Transaction.success(data);
+            }
+
+            @Override
+            public void onComplete(DatabaseError error, boolean committed,
+                                   DataSnapshot snapshot) {
+                if (error != null) {
+                    result[0] = new BidResult(false,
+                        "Lỗi kết nối Firebase: " + error.getMessage(),
+                        0, null, null, null, 0L, false);
+                    latch.countDown();
+                    return;
+                }
+                if (!committed) {
+                    result[0] = new BidResult(false, rejectReason[0],
+                        0, null, null, null, 0L, false);
+                    latch.countDown();
+                    return;
+                }
+
+                Double finalBid = snapshot.child("currentBid").getValue(Double.class);
+                String finalBidder = snapshot.child("highestBidder").getValue(String.class);
+                String finalPhone = snapshot.child("highestBidderPhone").getValue(String.class);
+                String finalEmail = snapshot.child("highestBidderEmail").getValue(String.class);
+                Long finalEndTime = snapshot.child("endTime").getValue(Long.class);
+                long originalEndTime = 0L;
+                result[0] = new BidResult(true, "OK",
+                    finalBid != null ? finalBid : bid,
+                    finalBidder, finalPhone, finalEmail,
+                    finalEndTime != null ? finalEndTime : originalEndTime,
+                    extendedInTransaction[0]);
+                latch.countDown();
+            }
+        });
+
+        try { latch.await(); } catch (Exception e) {
+            Thread.currentThread().interrupt();
+            return new BidResult(false, "Gửi giá bị gián đoạn.", 0,
+                null, null, null, 0L, false);
+        }
+        return result[0];
     }
 
     // ==============================================================
@@ -243,10 +393,9 @@ public class FirebaseService {
         getDB().child("products").child(key).child("endTime")
             .addListenerForSingleValueEvent(new ValueEventListener() {
                 @Override public void onDataChange(DataSnapshot snapshot) {
-                    Long currentEndTime = snapshot.getValue(Long.class);
+                    Long cur = snapshot.getValue(Long.class);
                     long now = System.currentTimeMillis();
-                    long base = (currentEndTime != null && currentEndTime > now)
-                                ? currentEndTime : now;
+                    long base = (cur != null && cur > now) ? cur : now;
                     snapshot.getRef().setValueAsync(base + (long) extraSeconds * 1000);
                 }
                 @Override public void onCancelled(DatabaseError e) {}
@@ -254,7 +403,7 @@ public class FirebaseService {
     }
 
     // ==============================================================
-    // 10. LẤY THAM CHIẾU FIREBASE
+    // 10. THAM CHIẾU FIREBASE
     // ==============================================================
     public static DatabaseReference getProductRef(String key) {
         if (key == null) return null;
@@ -272,50 +421,46 @@ public class FirebaseService {
     }
 
     // ==============================================================
-    // 12. LƯU 1 DÒNG LỊCH SỬ ĐẤU GIÁ LÊN FIREBASE
-    // Cấu trúc: products/{key}/bidHistory/{autoId}
-    //   - bidder   : tên người trả
-    //   - amount   : số tiền
-    //   - timestamp: Unix ms lúc trả giá
+    // 12. LƯU 1 DÒNG LỊCH SỬ ĐẤU GIÁ
     // ==============================================================
     public static void saveBidHistory(String productKey, String bidder, double amount) {
         if (productKey == null || bidder == null) return;
-        DatabaseReference histRef = getDB()
-            .child("products").child(productKey)
-            .child("bidHistory").push();
+        DatabaseReference ref = getDB()
+            .child("products").child(productKey).child("bidHistory").push();
 
-        long now = System.currentTimeMillis();
-        histRef.child("bidder").setValueAsync(bidder);
-        histRef.child("amount").setValueAsync(amount);
-        histRef.child("timestamp").setValueAsync(now);
+        java.util.Map<String, Object> bidRecord = new java.util.HashMap<>();
+        bidRecord.put("bidder", bidder);
+        bidRecord.put("amount", amount);
+        bidRecord.put("timestamp", ServerValue.TIMESTAMP);
+        ref.setValueAsync(bidRecord);
     }
 
     // ==============================================================
-    // 13. TẢI TOÀN BỘ LỊCH SỬ ĐẤU GIÁ CỦA 1 SẢN PHẨM
-    // Trả về List<String> đã format sẵn để đổ vào ListView
-    // Thứ tự: mới nhất lên đầu
+    // 13. TẢI TOÀN BỘ LỊCH SỬ (ĐỒNG BỘ, BLOCKING)
+    // Gọi trên background thread, trả về List đã sort mới → cũ
+    // Đồng thời trả về hasBids qua mảng boolean[1]
     // ==============================================================
-    public static List<String> loadBidHistory(String productKey) {
-        List<String> result = new ArrayList<>();
+    public static List<BidHistoryEntry> loadBidHistorySync(String productKey, boolean[] hasBidsOut) {
+        List<BidHistoryEntry> result = new ArrayList<>();
         if (productKey == null) return result;
         try {
             CountDownLatch latch = new CountDownLatch(1);
             getDB().child("products").child(productKey).child("bidHistory")
                 .addListenerForSingleValueEvent(new ValueEventListener() {
                     @Override public void onDataChange(DataSnapshot snapshot) {
+                        // snapshot.getChildren() trả về thứ tự cũ → mới
                         for (DataSnapshot entry : snapshot.getChildren()) {
                             String bidder    = entry.child("bidder").getValue(String.class);
                             Double amount    = entry.child("amount").getValue(Double.class);
                             Long   timestamp = entry.child("timestamp").getValue(Long.class);
                             if (bidder == null || amount == null) continue;
-
-                            // Format timestamp → "HH:mm:ss dd/MM"
-                            String timeStr = formatTimestamp(timestamp);
-                            String line = "🔔 [" + timeStr + "] " + bidder
-                                + " trả: " + formatVND(amount);
-                            // Thêm vào đầu để mới nhất lên trước
-                            result.add(0, line);
+                            String line = "🔔 [" + formatTimestamp(timestamp) + "] "
+                                        + bidder + " trả: " + formatVNDStatic(amount);
+                            result.add(0, new BidHistoryEntry(entry.getKey(), line)); // đảo → mới lên đầu
                         }
+                        // Nếu có ít nhất 1 record → hasBids = true
+                        if (hasBidsOut != null && snapshot.getChildrenCount() > 0)
+                            hasBidsOut[0] = true;
                         latch.countDown();
                     }
                     @Override public void onCancelled(DatabaseError e) { latch.countDown(); }
@@ -326,21 +471,26 @@ public class FirebaseService {
     }
 
     // ==============================================================
-    // HELPER: format Unix timestamp → "HH:mm:ss dd/MM/yyyy"
+    // 14. LẤY REFERENCE bidHistory CHO CHILD LISTENER (realtime mới)
     // ==============================================================
-    private static String formatTimestamp(Long ts) {
-        if (ts == null) return "??:??:??";
-        java.util.Date date = new java.util.Date(ts);
-        java.text.SimpleDateFormat sdf =
-            new java.text.SimpleDateFormat("HH:mm:ss dd/MM/yyyy",
-                java.util.Locale.getDefault());
-        return sdf.format(date);
+    public static DatabaseReference getBidHistoryRef(String productKey) {
+        if (productKey == null) return null;
+        return getDB().child("products").child(productKey).child("bidHistory");
     }
 
     // ==============================================================
-    // HELPER: format VND (dùng nội bộ trong FirebaseService)
+    // HELPER
     // ==============================================================
-    private static String formatVND(double amount) {
+    public static String formatTimestamp(Long ts) {
+        long timestamp = ts != null ? ts : System.currentTimeMillis();
+        java.text.SimpleDateFormat sdf =
+            new java.text.SimpleDateFormat("HH:mm:ss dd/MM/yyyy",
+                java.util.Locale.getDefault());
+        sdf.setTimeZone(java.util.TimeZone.getTimeZone("Asia/Ho_Chi_Minh"));
+        return sdf.format(new java.util.Date(timestamp));
+    }
+
+    public static String formatVNDStatic(double amount) {
         return java.text.NumberFormat
             .getCurrencyInstance(new java.util.Locale("vi", "VN"))
             .format(amount);
