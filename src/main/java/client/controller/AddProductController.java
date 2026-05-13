@@ -1,6 +1,7 @@
 package client.controller;
 
 import client.model.Product;
+import client.service.AuthService;
 import client.service.FirebaseService;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -46,7 +47,7 @@ public class AddProductController {
     @FXML
     private void handleAddProduct(ActionEvent event) {
         String name          = txtName.getText().trim();
-        // ← LẤY MÔ TẢ TỪ FORM
+        // LẤY MÔ TẢ TỪ FORM
         String description   = (txtDescription != null) ? txtDescription.getText().trim() : "";
         String startPriceStr = txtStartPrice.getText().trim();
         String stepPriceStr  = txtStepPrice.getText().trim();
@@ -96,10 +97,12 @@ public class AddProductController {
 
             String timeRemaining = "Kết thúc vào: "
                 + dpEndDate.getValue().toString() + " " + hour + ":" + minute;
-            String seller = FirebaseService.registeredUsername != null
-                            ? FirebaseService.registeredUsername : "Khách vãng lai";
 
-            // ← CONSTRUCTOR MỚI CÓ description
+            // ĐÃ FIX XUNG ĐỘT: Ưu tiên dùng cách của đồng đội (AuthService)
+            String seller = (AuthService.currentUserEmail != null)
+                            ? AuthService.currentUserEmail : "Khách vãng lai";
+
+            // CONSTRUCTOR MỚI CÓ description
             Product newProduct = new Product(
                 null, name, description,
                 startPrice, timeRemaining,
@@ -114,8 +117,11 @@ public class AddProductController {
                     "Sản phẩm của bạn đã được đưa lên sàn đấu giá!");
                 returnToProductList(event);
             } else {
+                String detail = FirebaseService.getLastError();
                 showAlert(AlertType.ERROR, "Lỗi",
-                    "Không thể kết nối Firebase. Vui lòng kiểm tra lại kết nối mạng!");
+                    detail == null || detail.isBlank()
+                        ? "Không thể lưu sản phẩm lên Firebase."
+                        : "Không thể lưu sản phẩm lên Firebase:\n" + detail);
             }
 
         } catch (NumberFormatException e) {

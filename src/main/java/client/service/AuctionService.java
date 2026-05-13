@@ -1,7 +1,8 @@
 package client.service;
 
 public class AuctionService {
-
+    // Lưu email người dùng đang đăng nhập
+    public static String currentUserEmail = null;
     /**
      * Kiểm tra giá mới có hợp lệ không.
      * Điều kiện: newPrice >= currentBid + stepPrice

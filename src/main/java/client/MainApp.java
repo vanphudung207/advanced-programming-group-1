@@ -12,34 +12,45 @@ import java.net.URL;
 // Lớp MainApp bắt buộc phải kế thừa Application của JavaFX
 public class MainApp extends Application {
 
-    // Hàm start là điểm bắt đầu của mọi ứng dụng JavaFX (tương tự hàm main bình thường)
+    // Hàm start là điểm bắt đầu của mọi ứng dụng JavaFX
     @Override
     public void start(Stage primaryStage) throws Exception {
-        // ĐÃ THÊM: Kết nối với máy chủ Firebase ngay khi bật App
-        client.service.FirebaseConfig.init();
-        // 1. Chỉ định đường dẫn tới file thiết kế Login.fxml của bạn
-        // Lưu ý: Dấu "/" ở đầu đại diện cho thư mục gốc của resources
-        URL fxmlLocation = getClass().getResource("/client/view/Register.fxml");
-        
-        // 2. Dùng FXMLLoader để đọc file FXML và biến nó thành đối tượng giao diện (Parent)
-        FXMLLoader loader = new FXMLLoader(fxmlLocation);
-        Parent root = loader.load();
 
-        // 3. Đặt toàn bộ giao diện vào một "khung cảnh" (Scene) với kích thước 450x300 pixel
-        Scene scene = new Scene(root, 600, 550);
+        // 1. Chỉ định đường dẫn tới file thiết kế Login.fxml
+        URL fxmlLocation =
+            getClass().getResource(
+                "/client/view/Register.fxml"
+            );
 
-        // 4. Thiết lập các thông số cho cửa sổ phần mềm (Stage)
-        primaryStage.setTitle("Hệ thống Đấu giá Trực tuyến"); // Tiêu đề cửa sổ
-        primaryStage.setScene(scene); // Lắp Scene vào Stage
-        primaryStage.setResizable(false); // Tạm khóa tính năng kéo giãn cửa sổ để form không bị xô lệch
-        
-        // 5. Hiển thị cửa sổ lên màn hình
+        // 2. Dùng FXMLLoader để đọc file FXML
+        FXMLLoader loader =
+            new FXMLLoader(fxmlLocation);
+
+        Parent root =
+            loader.load();
+
+        // 3. Tạo Scene
+        Scene scene =
+            new Scene(root, 600, 550);
+
+        // 4. Thiết lập cửa sổ
+        primaryStage.setTitle(
+            "Hệ thống Đấu giá Trực tuyến"
+        );
+
+        primaryStage.setScene(scene);
+
+        primaryStage.setResizable(false);
+
+        // 5. Hiển thị cửa sổ
         primaryStage.setMaximized(true);
+
         primaryStage.show();
     }
 
-    // Hàm main tiêu chuẩn của Java để kích hoạt ứng dụng
+    // Hàm main tiêu chuẩn của Java
     public static void main(String[] args) {
+
         launch(args);
     }
 }

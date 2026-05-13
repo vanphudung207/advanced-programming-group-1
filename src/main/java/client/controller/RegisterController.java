@@ -1,6 +1,7 @@
 package client.controller;
 
 import client.service.AuthService;
+import client.service.FirebaseService;
 import javafx.animation.FadeTransition;
 import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
@@ -76,6 +77,9 @@ public class RegisterController {
 
         task.setOnSucceeded(e -> {
             if (task.getValue()) {
+                Thread syncThread = new Thread(() -> FirebaseService.syncOldUserIfNeeded(email));
+                syncThread.setDaemon(true);
+                syncThread.start();
                 lblError.setStyle("-fx-text-fill: #27ae60; -fx-font-weight: bold; -fx-font-size: 13px;");
                 lblError.setText("Đăng ký thành công! Đang chuyển trang...");
                 switchToLogin(event);

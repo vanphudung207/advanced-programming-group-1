@@ -1,115 +1,114 @@
 package client.service;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 
 public class AuthService {
+    public static String currentUserEmail = null;
+    public static String currentUserIdToken = null;
+    public static String currentUserLocalId = null;
 
     private static final String API_KEY =
         "AIzaSyAGYt-4tSNEK6U2qZZvkBTYDglkygMlqVA";
 
-    // Đăng ký
-    public static boolean register(
-        String email,
-        String password
-    ) {
+    public static boolean register(String email, String password) {
+        return authenticate(
+            "https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=" + API_KEY,
+            email,
+            password,
+            "REGISTER"
+        );
+    }
 
+    public static boolean login(String email, String password) {
+        return authenticate(
+            "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=" + API_KEY,
+            email,
+            password,
+            "LOGIN"
+        );
+    }
+
+    public static void logout() {
+        currentUserEmail = null;
+        currentUserIdToken = null;
+        currentUserLocalId = null;
+    }
+
+    private static boolean authenticate(String endpoint, String email, String password, String label) {
         try {
-            //Api endpoint để kết nối tới fb
-            URL url = new URL(
-                "https://identitytoolkit.googleapis.com/v1/accounts:signUp?key="
-                + API_KEY
-            );
-            // mở kết nối http đến fb
-            HttpURLConnection conn =
-                (HttpURLConnection) url.openConnection();
-
+            HttpURLConnection conn = (HttpURLConnection) new URL(endpoint).openConnection();
             conn.setRequestMethod("POST");
-
-            conn.setRequestProperty(
-                "Content-Type",
-                "application/json"
-            );
-
+            conn.setRequestProperty("Content-Type", "application/json; charset=utf-8");
+            conn.setRequestProperty("Accept", "application/json");
             conn.setDoOutput(true);
-            //định dạng dữ liệu gửi đi
-            String json =
-                "{"
-                + "\"email\":\"" + email + "\","
-                + "\"password\":\"" + password + "\","
+
+            String json = "{"
+                + "\"email\":\"" + escape(email) + "\","
+                + "\"password\":\"" + escape(password) + "\","
                 + "\"returnSecureToken\":true"
                 + "}";
 
-            try(OutputStream os =
-                    conn.getOutputStream()) {
-
-                byte[] input =
-                    json.getBytes("utf-8");
-
+            try (OutputStream os = conn.getOutputStream()) {
+                byte[] input = json.getBytes(StandardCharsets.UTF_8);
                 os.write(input, 0, input.length);
             }
-            //nếu dữ liệu đúng fb sẽ phản hổi 200
+
             int responseCode = conn.getResponseCode();
-            System.out.println("REGISTER CODE: " + responseCode);
-            return responseCode == 200;
+            String response = readResponse(conn, responseCode);
+            System.out.println(label + " CODE: " + responseCode);
 
-        } catch(Exception e) {
+            if (responseCode != 200) {
+                System.out.println(label + " ERROR: " + response);
+                currentUserEmail = null;
+                currentUserIdToken = null;
+                currentUserLocalId = null;
+                return false;
+            }
 
+            JsonObject obj = JsonParser.parseString(response).getAsJsonObject();
+            currentUserEmail = email;
+            currentUserIdToken = obj.has("idToken") ? obj.get("idToken").getAsString() : null;
+            currentUserLocalId = obj.has("localId") ? obj.get("localId").getAsString() : null;
+            FirebaseService.currentUserEmail = email;
+            return currentUserIdToken != null && !currentUserIdToken.isBlank();
+        } catch (Exception e) {
             e.printStackTrace();
+            currentUserEmail = null;
+            currentUserIdToken = null;
+            currentUserLocalId = null;
             return false;
         }
     }
 
-    // Đăng nhập
-    public static boolean login(
-        String email,
-        String password
-    ) {
-
-        try {
-
-            URL url = new URL(
-                "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key="
-                + API_KEY
-            );
-
-            HttpURLConnection conn =
-                (HttpURLConnection) url.openConnection();
-
-            conn.setRequestMethod("POST");
-
-            conn.setRequestProperty(
-                "Content-Type",
-                "application/json"
-            );
-
-            conn.setDoOutput(true);
-
-            String json =
-                "{"
-                + "\"email\":\"" + email + "\","
-                + "\"password\":\"" + password + "\","
-                + "\"returnSecureToken\":true"
-                + "}";
-
-            try(OutputStream os =
-                    conn.getOutputStream()) {
-
-                byte[] input =
-                    json.getBytes("utf-8");
-
-                os.write(input, 0, input.length);
-            }
-
-            int responseCode = conn.getResponseCode();
-            System.out.println("LOGIN CODE: " + responseCode);
-            return responseCode == 200;
-
-        } catch(Exception e) {
-
-            e.printStackTrace();
-            return false;
+    private static String readResponse(HttpURLConnection conn, int responseCode) throws Exception {
+        BufferedReader reader = new BufferedReader(new InputStreamReader(
+            responseCode >= 400 ? conn.getErrorStream() : conn.getInputStream(),
+            StandardCharsets.UTF_8));
+        StringBuilder response = new StringBuilder();
+        String line;
+        while ((line = reader.readLine()) != null) {
+            response.append(line);
         }
+        reader.close();
+        return response.toString();
+    }
+
+    private static String escape(String text) {
+        if (text == null) {
+            return "";
+        }
+        return text
+            .replace("\\", "\\\\")
+            .replace("\"", "\\\"")
+            .replace("\n", "\\n")
+            .replace("\r", "\\r");
     }
 }
