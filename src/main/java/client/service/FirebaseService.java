@@ -1,348 +1,574 @@
 package client.service;
 
-import java.io.*;
-import java.net.*;
+import client.model.Product;
+
+
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
-import com.google.firebase.database.*;
-import client.model.Product;
-
 public class FirebaseService {
 
-    private static final String BASE_URL =
-        "https://advanced-programming-group-1-default-rtdb.asia-southeast1.firebasedatabase.app/";
-
-    public static String registeredUsername = null;
-
-    private static DatabaseReference getDB() {
-        return FirebaseDatabase.getInstance(BASE_URL).getReference();
-    }
+    private static final String BASE_URL = "https://advanced-programming-group-1-default-rtdb.asia-southeast1.firebasedatabase.app";
+    public static String currentUserEmail = null;
 
     // ==============================================================
-    // [GIỮ NGUYÊN] REST API cũ
-    // ==============================================================
-    public static String getAuction(String id) throws Exception {
-        URL url = new URL(BASE_URL + "auctions/" + id + ".json");
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        conn.setRequestMethod("GET");
-        BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-        String line; StringBuilder result = new StringBuilder();
-        while ((line = in.readLine()) != null) result.append(line);
-        in.close();
-        return result.toString();
-    }
-
-    // ==============================================================
-    // 1. ĐĂNG KÝ
-    // ==============================================================
-    public static boolean registerUser(String username, String password, String phone) {
-        try {
-            DatabaseReference ref = getDB().child("users").child(username);
-            CountDownLatch latch = new CountDownLatch(1);
-            boolean[] success = new boolean[1];
-            ref.addListenerForSingleValueEvent(new ValueEventListener() {
-                @Override public void onDataChange(DataSnapshot snapshot) {
-                    if (snapshot.exists()) { latch.countDown(); return; }
-                    ref.child("password").setValue(password, (error, r) -> {
-                        if (error == null) { ref.child("phone").setValueAsync(phone); success[0] = true; }
-                        latch.countDown();
-                    });
-                }
-                @Override public void onCancelled(DatabaseError e) { latch.countDown(); }
-            });
-            latch.await(); return success[0];
-        } catch (Exception e) { return false; }
-    }
-
-    // ==============================================================
-    // 2. ĐĂNG NHẬP
-    // ==============================================================
-    public static boolean checkLogin(String username, String password) {
-        try {
-            CountDownLatch latch = new CountDownLatch(1);
-            boolean[] ok = new boolean[1];
-            getDB().child("users").child(username).addListenerForSingleValueEvent(new ValueEventListener() {
-                @Override public void onDataChange(DataSnapshot s) {
-                    if (s.exists()) {
-                        String dbPass = s.child("password").getValue(String.class);
-                        if (password.equals(dbPass)) ok[0] = true;
-                    }
-                    latch.countDown();
-                }
-                @Override public void onCancelled(DatabaseError e) { latch.countDown(); }
-            });
-            latch.await(); return ok[0];
-        } catch (Exception e) { return false; }
-    }
-
-    // ==============================================================
-    // 3. LẤY SỐ ĐIỆN THOẠI
-    // ==============================================================
-    public static String getUserPhone(String username) {
-        try {
-            CountDownLatch latch = new CountDownLatch(1);
-            String[] phone = {"Chưa cập nhật"};
-            getDB().child("users").child(username).addListenerForSingleValueEvent(new ValueEventListener() {
-                @Override public void onDataChange(DataSnapshot s) {
-                    if (s.exists() && s.hasChild("phone"))
-                        phone[0] = s.child("phone").getValue(String.class);
-                    latch.countDown();
-                }
-                @Override public void onCancelled(DatabaseError e) { latch.countDown(); }
-            });
-            latch.await(); return phone[0];
-        } catch (Exception e) { return "Chưa cập nhật"; }
-    }
-
-    // ==============================================================
-    // 4. ĐĂNG SẢN PHẨM
+    // 1. THÊM SẢN PHẨM 
     // ==============================================================
     public static String addProduct(Product newProduct) {
         try {
-            DatabaseReference productRef = getDB().child("products").push();
-            String key = productRef.getKey();
-            CountDownLatch latch = new CountDownLatch(1);
+            URL url = new URL(BASE_URL + "/products.json");
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("POST");
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setDoOutput(true);
 
             long endTime = newProduct.getEndTime() > 0
                 ? newProduct.getEndTime()
-                : System.currentTimeMillis() + 60_000L;
+                : System.currentTimeMillis() + 60000;
 
-            productRef.child("id").setValueAsync(key);
-            productRef.child("name").setValueAsync(newProduct.getName());
-            productRef.child("description").setValueAsync(
-                newProduct.getDescription() != null ? newProduct.getDescription() : "");
-            productRef.child("currentBid").setValueAsync(newProduct.getCurrentBid());
-            productRef.child("timeRemaining").setValueAsync(newProduct.getTimeRemaining());
-            productRef.child("imagePath").setValueAsync(newProduct.getImagePath());
-            productRef.child("sellerUsername").setValueAsync(newProduct.getSellerUsername());
-            productRef.child("category").setValueAsync(newProduct.getCategory());
-            productRef.child("stepPrice").setValueAsync(newProduct.getStepPrice());
-            productRef.child("status").setValueAsync("active");
-            productRef.child("endTime").setValueAsync(endTime);
-            productRef.child("highestBidder").setValueAsync(null);
-            productRef.child("highestBidderPhone").setValueAsync(null);
-            productRef.child("highestBidderEmail").setValueAsync(null);
+            String json = "{"
+                + "\"name\":\"" + escape(newProduct.getName()) + "\","
+                + "\"currentBid\":" + newProduct.getCurrentBid() + ","
+                + "\"timeRemaining\":\"" + escape(newProduct.getTimeRemaining()) + "\","
+                + "\"imagePath\":\"" + escape(newProduct.getImagePath()) + "\","
+                + "\"sellerUsername\":\"" + escape(newProduct.getSellerUsername()) + "\","
+                + "\"category\":\"" + escape(newProduct.getCategory()) + "\","
+                + "\"stepPrice\":" + newProduct.getStepPrice() + ","
+                + "\"status\":\"active\","
+                + "\"endTime\":" + endTime + ","
+                + "\"highestBidder\":\"\","
+                + "\"highestBidderPhone\":\"\","
+                + "\"highestBidderEmail\":\"\""
+                + "}";
 
-            productRef.child("name").setValue(newProduct.getName(), (error, r) -> {
-                System.out.println(error == null
-                    ? "✅ Đăng SP thành công: " + key
-                    : "❌ Lỗi: " + error.getMessage());
-                latch.countDown();
-            });
-            latch.await(); return key;
-        } catch (Exception e) { e.printStackTrace(); return null; }
+            try (OutputStream os = conn.getOutputStream()) {
+                byte[] input = json.getBytes("utf-8");
+                os.write(input, 0, input.length);
+            }
+
+            if (conn.getResponseCode() == 200) {
+                BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "utf-8"));
+                StringBuilder response = new StringBuilder();
+                String responseLine;
+                while ((responseLine = br.readLine()) != null) {
+                    response.append(responseLine.trim());
+                }
+                br.close();
+                System.out.println(" Đăng sản phẩm thành công (HTTP)!");
+                return response.toString();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     // ==============================================================
-    // 5. TẢI DANH SÁCH SẢN PHẨM
+    // 2. LẤY TOÀN BỘ SẢN PHẨM 
     // ==============================================================
     public static List<Product> getAllProducts() {
         List<Product> products = new ArrayList<>();
         try {
-            CountDownLatch latch = new CountDownLatch(1);
-            getDB().child("products").addListenerForSingleValueEvent(new ValueEventListener() {
-                @Override public void onDataChange(DataSnapshot snapshot) {
-                    for (DataSnapshot doc : snapshot.getChildren()) {
-                        String id = doc.child("id").getValue(String.class);
-                        if (id == null) id = doc.getKey();
-                        String firebaseKey    = doc.getKey();
-                        String name           = doc.child("name").getValue(String.class);
-                        String description    = doc.child("description").getValue(String.class);
-                        Double currentBid     = doc.child("currentBid").getValue(Double.class);
-                        String timeRemaining  = doc.child("timeRemaining").getValue(String.class);
-                        String imagePath      = doc.child("imagePath").getValue(String.class);
-                        String sellerUsername = doc.child("sellerUsername").getValue(String.class);
-                        String category       = doc.child("category").getValue(String.class);
-                        Double stepPrice      = doc.child("stepPrice").getValue(Double.class);
-                        String status         = doc.child("status").getValue(String.class);
-                        String highestBidder  = doc.child("highestBidder").getValue(String.class);
-                        String bidderPhone    = doc.child("highestBidderPhone").getValue(String.class);
-                        String bidderEmail    = doc.child("highestBidderEmail").getValue(String.class);
+            URL url = new URL(BASE_URL + "/products.json");
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("GET");
+            BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream(), "utf-8"));
+            StringBuilder response = new StringBuilder();
+            String inputLine;
+            while ((inputLine = in.readLine()) != null) {
+                response.append(inputLine);
+            }
+            in.close();
 
-                        Long endTime = doc.child("endTime").getValue(Long.class);
-                        if (endTime == null || endTime == 0) {
-                            Long oldSecs = doc.child("secondsRemaining").getValue(Long.class);
-                            endTime = (oldSecs != null && oldSecs > 0)
-                                ? System.currentTimeMillis() + oldSecs * 1000
-                                : 0L;
-                        }
+            String json = response.toString();
+            if (json == null || json.equals("null")) return products;
 
-                        Product p = new Product(
-                            id, name, description,
-                            currentBid != null ? currentBid : 0.0,
-                            timeRemaining, imagePath, sellerUsername,
-                            category,
-                            stepPrice != null ? stepPrice : 0.0,
-                            status != null ? status : "active",
-                            endTime
-                        );
-                        p.setFirebaseKey(firebaseKey);
-                        p.setHighestBidder(highestBidder);
-                        p.setHighestBidderPhone(bidderPhone);
-                        p.setHighestBidderEmail(bidderEmail);
-                        products.add(0, p);
-                    }
-                    latch.countDown();
-                }
-                @Override public void onCancelled(DatabaseError e) { latch.countDown(); }
-            });
-            latch.await();
-        } catch (Exception e) { e.printStackTrace(); }
+            // Dùng Gson để biến chuỗi HTTP thành danh sách Sản phẩm
+            com.google.gson.JsonObject jsonObject = com.google.gson.JsonParser.parseString(json).getAsJsonObject();
+            for (java.util.Map.Entry<String, com.google.gson.JsonElement> entry : jsonObject.entrySet()) {
+                String key = entry.getKey();
+                com.google.gson.JsonObject obj = entry.getValue().getAsJsonObject();
+
+                Product p = new Product(
+                    obj.has("id") ? obj.get("id").getAsString() : key,
+                    obj.has("name") ? obj.get("name").getAsString() : "Không tên",
+                    obj.has("description") ? obj.get("description").getAsString() : "",
+                    obj.has("currentBid") ? obj.get("currentBid").getAsDouble() : 0.0,
+                    obj.has("timeRemaining") ? obj.get("timeRemaining").getAsString() : "",
+                    obj.has("imagePath") ? obj.get("imagePath").getAsString() : "",
+                    obj.has("sellerUsername") ? obj.get("sellerUsername").getAsString() : "Ẩn danh",
+                    obj.has("category") ? obj.get("category").getAsString() : "Khác",
+                    obj.has("stepPrice") ? obj.get("stepPrice").getAsDouble() : 0.0,
+                    obj.has("status") ? obj.get("status").getAsString() : "active",
+                    obj.has("endTime") ? obj.get("endTime").getAsLong() : 0L
+                );
+                p.setFirebaseKey(key);
+                p.setHighestBidder(obj.has("highestBidder") ? obj.get("highestBidder").getAsString() : "");
+                p.setHighestBidderPhone(obj.has("highestBidderPhone") ? obj.get("highestBidderPhone").getAsString() : "");
+                p.setHighestBidderEmail(obj.has("highestBidderEmail") ? obj.get("highestBidderEmail").getAsString() : "");
+
+                products.add(0, p); // Đưa sản phẩm mới lên đầu
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return products;
     }
 
     // ==============================================================
-    // 6. LỌC / TÌM KIẾM
+    // 3. UPDATE GIÁ ĐẤU (HTTP request)
     // ==============================================================
-    public static List<Product> getProductsByCategory(String cat) {
-        if ("Tất cả sản phẩm".equals(cat)) return getAllProducts();
-        List<Product> r = new ArrayList<>();
-        for (Product p : getAllProducts())
-            if (p.getCategory() != null && p.getCategory().equals(cat)) r.add(p);
-        return r;
+    public static void updateBid(String firebaseKey, double bid, String bidder, String phone, String email) {
+        try {
+            URL url = new URL(BASE_URL + "/products/" + firebaseKey + ".json");
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("PATCH");
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setDoOutput(true);
+
+            String json = "{"
+                + "\"currentBid\":" + bid + ","
+                + "\"highestBidder\":\"" + escape(bidder) + "\","
+                + "\"highestBidderPhone\":\"" + escape(phone) + "\","
+                + "\"highestBidderEmail\":\"" + escape(email) + "\""
+                + "}";
+
+            try (OutputStream os = conn.getOutputStream()) {
+                byte[] input = json.getBytes("utf-8");
+                os.write(input, 0, input.length);
+            }
+            System.out.println(" Update bid thành công (HTTP)!");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    // ==============================================================
+    // 4. ĐÁNH DẤU KẾT THÚC ĐẤU GIÁ 
+    // ==============================================================
+    public static void markAuctionEnded(String firebaseKey) {
+        try {
+            URL url = new URL(BASE_URL + "/products/" + firebaseKey + ".json");
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("PATCH");
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setDoOutput(true);
+
+            String json = "{"
+                + "\"status\":\"ended\""
+                + "}";
+
+            try (OutputStream os = conn.getOutputStream()) {
+                byte[] input = json.getBytes("utf-8");
+                os.write(input, 0, input.length);
+            }
+            System.out.println(" Đấu giá kết thúc (HTTP)!");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    // ==============================================================
+    // 5. CÁC HÀM TIỆN ÍCH LỌC TÌM KIẾM 
+    // ==============================================================
+    private static String escape(String text) {
+        if (text == null) return "";
+        return text.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 
     public static List<Product> searchProducts(String keyword) {
-        List<Product> r = new ArrayList<>();
+        List<Product> result = new ArrayList<>();
         String kw = keyword.toLowerCase();
-        for (Product p : getAllProducts())
-            if (p.getName() != null && p.getName().toLowerCase().contains(kw)) r.add(p);
-        return r;
+        for (Product p : getAllProducts()) {
+            if (p.getName() != null && p.getName().toLowerCase().contains(kw)) {
+                result.add(p);
+            }
+        }
+        return result;
     }
 
-    // ==============================================================
-    // 7. CẬP NHẬT GIÁ
-    // ==============================================================
-    public static void updateBid(String key, double bid, String bidder,
-                                  String phone, String email) {
-        if (key == null) return;
-        DatabaseReference ref = getDB().child("products").child(key);
-        ref.child("currentBid").setValueAsync(bid);
-        ref.child("highestBidder").setValueAsync(bidder);
-        if (phone != null) ref.child("highestBidderPhone").setValueAsync(phone);
-        if (email != null) ref.child("highestBidderEmail").setValueAsync(email);
-    }
-
-    // ==============================================================
-    // 8. ĐÁNH DẤU KẾT THÚC
-    // ==============================================================
-    public static void markAuctionEnded(String key) {
-        if (key == null) return;
-        DatabaseReference ref = getDB().child("products").child(key);
-        ref.child("status").setValueAsync("ended");
-        ref.child("endTime").setValueAsync(0L);
-    }
-
-    // ==============================================================
-    // 9. ANTI-SNIPING
-    // ==============================================================
-    public static void extendEndTime(String key, int extraSeconds) {
-        if (key == null) return;
-        getDB().child("products").child(key).child("endTime")
-            .addListenerForSingleValueEvent(new ValueEventListener() {
-                @Override public void onDataChange(DataSnapshot snapshot) {
-                    Long currentEndTime = snapshot.getValue(Long.class);
-                    long now = System.currentTimeMillis();
-                    long base = (currentEndTime != null && currentEndTime > now)
-                                ? currentEndTime : now;
-                    snapshot.getRef().setValueAsync(base + (long) extraSeconds * 1000);
-                }
-                @Override public void onCancelled(DatabaseError e) {}
-            });
-    }
-
-    // ==============================================================
-    // 10. LẤY THAM CHIẾU FIREBASE
-    // ==============================================================
-    public static DatabaseReference getProductRef(String key) {
-        if (key == null) return null;
-        return getDB().child("products").child(key);
-    }
-
-    // ==============================================================
-    // 11. LƯU PHONE KHI ĐĂNG KÝ
-    // ==============================================================
-    public static void saveUserPhone(String email, String phone) {
-        if (email == null || phone == null) return;
-        String key = email.replace(".", ",");
-        getDB().child("users").child(key).child("phone").setValueAsync(phone);
-        getDB().child("users").child(key).child("email").setValueAsync(email);
-    }
-
-    // ==============================================================
-    // 12. LƯU 1 DÒNG LỊCH SỬ ĐẤU GIÁ LÊN FIREBASE
-    // Cấu trúc: products/{key}/bidHistory/{autoId}
-    //   - bidder   : tên người trả
-    //   - amount   : số tiền
-    //   - timestamp: Unix ms lúc trả giá
-    // ==============================================================
-    public static void saveBidHistory(String productKey, String bidder, double amount) {
-        if (productKey == null || bidder == null) return;
-        DatabaseReference histRef = getDB()
-            .child("products").child(productKey)
-            .child("bidHistory").push();
-
-        long now = System.currentTimeMillis();
-        histRef.child("bidder").setValueAsync(bidder);
-        histRef.child("amount").setValueAsync(amount);
-        histRef.child("timestamp").setValueAsync(now);
-    }
-
-    // ==============================================================
-    // 13. TẢI TOÀN BỘ LỊCH SỬ ĐẤU GIÁ CỦA 1 SẢN PHẨM
-    // Trả về List<String> đã format sẵn để đổ vào ListView
-    // Thứ tự: mới nhất lên đầu
-    // ==============================================================
-    public static List<String> loadBidHistory(String productKey) {
-        List<String> result = new ArrayList<>();
-        if (productKey == null) return result;
-        try {
-            CountDownLatch latch = new CountDownLatch(1);
-            getDB().child("products").child(productKey).child("bidHistory")
-                .addListenerForSingleValueEvent(new ValueEventListener() {
-                    @Override public void onDataChange(DataSnapshot snapshot) {
-                        for (DataSnapshot entry : snapshot.getChildren()) {
-                            String bidder    = entry.child("bidder").getValue(String.class);
-                            Double amount    = entry.child("amount").getValue(Double.class);
-                            Long   timestamp = entry.child("timestamp").getValue(Long.class);
-                            if (bidder == null || amount == null) continue;
-
-                            // Format timestamp → "HH:mm:ss dd/MM"
-                            String timeStr = formatTimestamp(timestamp);
-                            String line = "🔔 [" + timeStr + "] " + bidder
-                                + " trả: " + formatVND(amount);
-                            // Thêm vào đầu để mới nhất lên trước
-                            result.add(0, line);
-                        }
-                        latch.countDown();
-                    }
-                    @Override public void onCancelled(DatabaseError e) { latch.countDown(); }
-                });
-            latch.await();
-        } catch (Exception e) { e.printStackTrace(); }
+    public static List<Product> getProductsByCategory(String category) {
+        if (category.equals("Tất cả sản phẩm")) {
+            return getAllProducts();
+        }
+        List<Product> result = new ArrayList<>();
+        for (Product p : getAllProducts()) {
+            if (p.getCategory() != null && p.getCategory().equals(category)) {
+                result.add(p);
+            }
+        }
         return result;
     }
 
     // ==============================================================
-    // HELPER: format Unix timestamp → "HH:mm:ss dd/MM/yyyy"
+    // CÁC HÀM CỦA ADMIN
     // ==============================================================
-    private static String formatTimestamp(Long ts) {
-        if (ts == null) return "??:??:??";
-        java.util.Date date = new java.util.Date(ts);
-        java.text.SimpleDateFormat sdf =
-            new java.text.SimpleDateFormat("HH:mm:ss dd/MM/yyyy",
-                java.util.Locale.getDefault());
-        return sdf.format(date);
+    public static void saveBasicUser(String email) {
+        try {
+            if (email == null) return;
+
+            // Firebase không cho dùng dấu "." trong key
+            String key = email.replace(".", ",");
+
+            URL url = new URL(BASE_URL + "/users/" + key + ".json");
+
+            HttpURLConnection conn =
+                (HttpURLConnection) url.openConnection();
+
+            conn.setRequestMethod("PUT");
+            conn.setRequestProperty(
+                "Content-Type",
+                "application/json"
+            );
+
+            conn.setDoOutput(true);
+
+            String json =
+                "{"
+                + "\"email\":\"" + email + "\","
+                + "\"role\":\"user\","
+                + "\"status\":\"active\""
+                + "}";
+
+            try(OutputStream os = conn.getOutputStream()) {
+
+                byte[] input =
+                    json.getBytes("utf-8");
+
+                os.write(input, 0, input.length);
+            }
+
+            System.out.println(
+                "SAVE USER CODE: " + conn.getResponseCode()
+            );
+
+        } catch(Exception e) {
+            e.printStackTrace();
+        }
     }
 
     // ==============================================================
-    // HELPER: format VND (dùng nội bộ trong FirebaseService)
+    // LẤY TOÀN BỘ USER BẰNG HTTP GET
     // ==============================================================
-    private static String formatVND(double amount) {
-        return java.text.NumberFormat
-            .getCurrencyInstance(new java.util.Locale("vi", "VN"))
-            .format(amount);
+    public static List<client.model.User> getAllUsers() {
+
+        List<client.model.User> users =
+            new ArrayList<>();
+        try {
+            // URL lấy toàn bộ users
+            URL url =
+                new URL(
+                    BASE_URL
+                    + "/users.json"
+                );
+            HttpURLConnection conn =
+                (HttpURLConnection)
+                url.openConnection();
+            conn.setRequestMethod("GET");
+            BufferedReader in =
+                new BufferedReader(
+                    new InputStreamReader(
+                        conn.getInputStream()
+                    )
+                );
+            String inputLine;
+            StringBuilder response =
+                new StringBuilder();
+            while (
+                (inputLine = in.readLine()) != null
+            ) {
+                response.append(inputLine);
+            }
+            in.close();
+            String json =
+                response.toString();
+            // Nếu database trống
+            if (
+                json == null
+                || json.equals("null")
+            ) {
+
+                return users;
+            }
+            // Parse JSON bằng Gson
+            com.google.gson.JsonObject jsonObject =
+                com.google.gson.JsonParser
+                    .parseString(json)
+                    .getAsJsonObject();
+            // Duyệt từng user
+            for (
+                java.util.Map.Entry
+                <
+                    String,
+                    com.google.gson.JsonElement
+                > entry
+                : jsonObject.entrySet()
+            ) {
+                com.google.gson.JsonObject obj =
+                    entry.getValue()
+                        .getAsJsonObject();
+                String email =
+                    obj.has("email")
+                    ? obj.get("email").getAsString()
+                    : entry.getKey().replace(",", ".");
+                String role =
+                    obj.has("role")
+                    ? obj.get("role").getAsString()
+                    : "user";
+                String status =
+                    obj.has("status")
+                    ? obj.get("status").getAsString()
+                    : "active";
+                users.add(
+                    new client.model.User(
+                        email,
+                        role,
+                        status
+                    )
+                );
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return users;
+    }
+
+    public static void toggleUserStatus(
+    String email,
+    String newStatus
+    ) {
+        try {
+            String key =
+                email.replace(".", ",");
+            URL url =
+                new URL(
+                    BASE_URL
+                    + "/users/"
+                    + key
+                    + ".json"
+                );
+            HttpURLConnection conn =(HttpURLConnection)url.openConnection();
+            conn.setRequestMethod("PATCH");
+            conn.setRequestProperty("Content-Type","application/json"
+            );
+            conn.setDoOutput(true);
+            String json =
+                "{"
+                + "\"status\":\""
+                + newStatus
+                + "\""
+                + "}";
+            try(OutputStream os =conn.getOutputStream()) {
+                byte[] input =
+                    json.getBytes("utf-8");
+                os.write(input, 0, input.length);
+            }
+            System.out.println("Update status success!");
+        } catch(Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    // ==============================================================
+    // ĐỒNG BỘ USER CŨ NẾU CHƯA TỒN TẠI, tạo role cho user trong database
+    // ==============================================================
+    public static void syncOldUserIfNeeded(
+        String email
+    ) {
+
+        // Email null thì thôi
+        if (email == null) return;
+
+        try {
+
+            // Firebase key không cho dấu .
+            String key =
+                email.replace(".", ",");
+
+            // ======================================================
+            // 1. KIỂM TRA USER ĐÃ TỒN TẠI CHƯA
+            // ======================================================
+            URL getUrl =
+                new URL(
+                    BASE_URL
+                    + "/users/"
+                    + key
+                    + ".json"
+                );
+
+            HttpURLConnection getConn =
+                (HttpURLConnection)
+                getUrl.openConnection();
+
+            getConn.setRequestMethod("GET");
+
+            BufferedReader in =
+                new BufferedReader(
+                    new InputStreamReader(
+                        getConn.getInputStream()
+                    )
+                );
+
+            String inputLine;
+
+            StringBuilder response =
+                new StringBuilder();
+
+            while (
+                (inputLine = in.readLine()) != null
+            ) {
+
+                response.append(inputLine);
+            }
+
+            in.close();
+
+            // ======================================================
+            // 2. NẾU USER CHƯA CÓ -> TẠO MỚI
+            // ======================================================
+            if (
+                response.toString().equals("null")
+            ) {
+
+                URL putUrl =
+                    new URL(
+                        BASE_URL
+                        + "/users/"
+                        + key
+                        + ".json"
+                    );
+
+                HttpURLConnection putConn =
+                    (HttpURLConnection)
+                    putUrl.openConnection();
+
+                putConn.setRequestMethod("PUT");
+
+                putConn.setRequestProperty(
+                    "Content-Type",
+                    "application/json"
+                );
+
+                putConn.setDoOutput(true);
+
+                // Admin thì role admin
+                String role =
+                    email.equalsIgnoreCase(
+                        "Admin@gmail.com"
+                    )
+                    ? "admin"
+                    : "user";
+
+                String json =
+                    "{"
+                    + "\"email\":\"" + email + "\","
+                    + "\"status\":\"active\","
+                    + "\"role\":\"" + role + "\""
+                    + "}";
+
+                try(OutputStream os =
+                        putConn.getOutputStream()) {
+
+                    byte[] input =
+                        json.getBytes("utf-8");
+
+                    os.write(input, 0, input.length);
+                }
+
+                System.out.println(
+                    "Đồng bộ user thành công!"
+                );
+            }
+
+        } catch(Exception e) {
+
+            e.printStackTrace();
+        }
+    }
+
+    public static String getUserStatus(
+    String email
+    ) {
+        try {
+            String key =
+                email.replace(".", ",");
+            URL url =
+                new URL(
+                    BASE_URL
+                    + "/users/"
+                    + key
+                    + "/status.json"
+                );
+            HttpURLConnection conn =(HttpURLConnection)url.openConnection();
+            conn.setRequestMethod("GET");
+            BufferedReader in =
+                new BufferedReader(
+                    new InputStreamReader(
+                        conn.getInputStream()
+                    )
+                );
+            String inputLine;
+            StringBuilder response =
+                new StringBuilder();
+            while (
+                (inputLine = in.readLine()) != null
+            ) {
+                response.append(inputLine);
+            }
+            in.close();
+            return response.toString()
+                .replace("\"", "");
+        } catch(Exception e) {
+            e.printStackTrace();
+            return "active";
+        }
+    }
+
+    public static void deleteProduct(String key) {
+
+        // Nếu key null thì thôi
+        if (key == null) return;
+        try {
+            // URL tới đúng sản phẩm cần xóa trên Firebase
+            URL url =
+                new URL(
+                    BASE_URL
+                    + "/products/"
+                    + key
+                    + ".json"
+                );
+            // Mở kết nối HTTP
+            HttpURLConnection conn =
+                (HttpURLConnection)
+                url.openConnection();
+            // Dùng phương thức DELETE
+            conn.setRequestMethod("DELETE");
+            // Gửi request và lấy mã phản hồi
+            int responseCode =
+                conn.getResponseCode();
+            System.out.println(
+                "DELETE PRODUCT CODE: "
+                + responseCode
+            );
+            // 200 = thành công
+            if (responseCode == 200) {
+                System.out.println(
+                    "Đã xóa sản phẩm thành công!"
+                );
+            } else {
+                System.out.println(
+                    "Xóa sản phẩm thất bại!"
+                );
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }

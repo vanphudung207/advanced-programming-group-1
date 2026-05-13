@@ -87,11 +87,63 @@
                     
                     <HBox alignment="CENTER_LEFT" spacing="10.0">
                         <children>
-                            <TextField fx:id="txtSearch" onAction="#handleSearchAction" prefWidth="400.0" promptText="🔍 Bạn muốn đấu giá món hàng nào hôm nay?..." style="-fx-padding: 12px 20px; -fx-font-size: 15px; -fx-background-radius: 25px; -fx-border-color: #bdc3c7; -fx-border-radius: 25px; -fx-background-color: white;" />
-                            <Button fx:id="btnSearch" onAction="#handleSearchAction" mnemonicParsing="false" style="-fx-background-color: #2c3e50; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 15px; -fx-padding: 12px 25px; -fx-background-radius: 25px; -fx-cursor: hand;" text="Tìm kiếm" />
+
+                            <TextField
+                                    fx:id="txtSearch"
+                                    onAction="#handleSearchAction"
+                                    prefWidth="400.0"
+                                    promptText="🔍 Bạn muốn đấu giá món hàng nào hôm nay?..."
+                                    style="-fx-padding: 12px 20px;
+                                        -fx-font-size: 15px;
+                                        -fx-background-radius: 25px;
+                                        -fx-border-color: #bdc3c7;
+                                        -fx-border-radius: 25px;
+                                        -fx-background-color: white;" />
+
+                            <Button
+                                    fx:id="btnSearch"
+                                    onAction="#handleSearchAction"
+                                    mnemonicParsing="false"
+                                    text="Tìm kiếm"
+                                    style="-fx-background-color: #2c3e50;
+                                        -fx-text-fill: white;
+                                        -fx-font-weight: bold;
+                                        -fx-font-size: 15px;
+                                        -fx-padding: 12px 25px;
+                                        -fx-background-radius: 25px;
+                                        -fx-cursor: hand;" />
+
+                            <Button
+                                    text="🔄 Reload"
+                                    onAction="#handleReloadAction"
+                                    mnemonicParsing="false"
+                                    style="-fx-background-color: #27ae60;
+                                        -fx-text-fill: white;
+                                        -fx-font-weight: bold;
+                                        -fx-font-size: 15px;
+                                        -fx-padding: 12px 25px;
+                                        -fx-background-radius: 25px;
+                                        -fx-cursor: hand;" />
+
                             <Region HBox.hgrow="ALWAYS" />
-                            <Label text="Sắp xếp:" style="-fx-font-weight: bold; -fx-text-fill: #2c3e50; -fx-font-size: 14px;" />
-                            <ComboBox fx:id="cbSort" onAction="#handleSortAction" prefWidth="180.0" promptText="Mặc định" style="-fx-background-color: white; -fx-border-color: #bdc3c7; -fx-border-radius: 5px; -fx-padding: 2px; -fx-cursor: hand;" />
+
+                            <Label
+                                    text="Sắp xếp:"
+                                    style="-fx-font-weight: bold;
+                                        -fx-text-fill: #2c3e50;
+                                        -fx-font-size: 14px;" />
+
+                            <ComboBox
+                                    fx:id="cbSort"
+                                    onAction="#handleSortAction"
+                                    prefWidth="180.0"
+                                    promptText="Mặc định"
+                                    style="-fx-background-color: white;
+                                        -fx-border-color: #bdc3c7;
+                                        -fx-border-radius: 5px;
+                                        -fx-padding: 2px;
+                                        -fx-cursor: hand;" />
+
                         </children>
                     </HBox>
 

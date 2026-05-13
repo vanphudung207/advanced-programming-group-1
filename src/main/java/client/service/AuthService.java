@@ -5,7 +5,10 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 
 public class AuthService {
+    // lưu email người đang đăng nhập
+    public static String currentUserEmail = null;
 
+    //kết nối với api của firebase để firebase biết app của mình là app vào trên database của nó
     private static final String API_KEY =
         "AIzaSyAGYt-4tSNEK6U2qZZvkBTYDglkygMlqVA";
 
@@ -104,7 +107,11 @@ public class AuthService {
 
             int responseCode = conn.getResponseCode();
             System.out.println("LOGIN CODE: " + responseCode);
-            return responseCode == 200;
+            boolean success = conn.getResponseCode() == 200;
+            if (success) {
+                currentUserEmail = email;
+            }       
+            return success;
 
         } catch(Exception e) {
 

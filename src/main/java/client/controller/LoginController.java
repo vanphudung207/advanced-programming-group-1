@@ -1,7 +1,6 @@
 package client.controller;
 
 import client.service.AuthService;
-import client.service.FirebaseService;
 import javafx.animation.FadeTransition;
 import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
@@ -46,15 +45,14 @@ public class LoginController {
             return;
         }
 
-        // Tài khoản Admin cố định — không cần gọi Firebase
-        if (enteredEmail.equals("Admin@gmail.com") && enteredPassword.equals("nhom1")) {
-            FirebaseService.registeredUsername = "Admin";
+        // Tài khoản Admin cố định
+        if (enteredEmail.equals("Admin@gmail.com") && enteredPassword.equals("nhom1hehe")) {
+            // ĐÃ XÓA DÒNG LỖI - Chỉ dùng biến gốc của đồng đội
+            AuthService.currentUserEmail = "Admin"; 
             navigateTo(event, "/client/view/Admin.fxml", "Online Auction System - Admin");
             return;
         }
 
-        // FIX: Chạy AuthService.login() trên background thread
-        // tránh block JavaFX thread gây đơ / không đăng nhập được
         if (btnLogin != null) btnLogin.setDisable(true);
         lblError.setText("Đang đăng nhập...");
         lblError.setStyle("-fx-text-fill: #3498db;");
@@ -68,8 +66,9 @@ public class LoginController {
 
         loginTask.setOnSucceeded(e -> {
             if (loginTask.getValue()) {
-                // Lưu email làm username để các màn hình khác dùng
-                FirebaseService.registeredUsername = enteredEmail;
+                // Đăng nhập thành công: ĐÃ XÓA DÒNG LỖI
+                AuthService.currentUserEmail = enteredEmail;
+
                 navigateTo(event,
                     "/client/view/ProductList.fxml",
                     "Online Auction System - Danh sách sản phẩm");
