@@ -7,15 +7,17 @@ import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.net.URL;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -28,6 +30,9 @@ public class FirebaseService {
 
     private static final String BASE_URL =
         "https://advanced-programming-group-1-default-rtdb.asia-southeast1.firebasedatabase.app";
+    private static final HttpClient HTTP_CLIENT = HttpClient.newBuilder()
+        .connectTimeout(Duration.ofSeconds(10))
+        .build();
 
     public static String currentUserEmail = null;
     private static String lastError = null;
@@ -240,21 +245,26 @@ public class FirebaseService {
             endTime += 10_000L;
         }
 
-        updateBid(key, bid, bidder, phone, email, endTime);
+        if (!updateBid(key, bid, bidder, phone, email, endTime)) {
+            return new BidResult(false, "Không thể cập nhật giá hiện tại. Vui lòng thử lại.",
+                product.getCurrentBid(), product.getHighestBidder(),
+                product.getHighestBidderPhone(), product.getHighestBidderEmail(),
+                product.getEndTime(), false);
+        }
         saveBidHistory(key, bidder, bid);
 
         return new BidResult(true, "OK", bid, bidder, phone, email, endTime, extended);
     }
 
-    public static void updateBid(String firebaseKey, double bid, String bidder,
+    public static boolean updateBid(String firebaseKey, double bid, String bidder,
                                  String phone, String email) {
-        updateBid(firebaseKey, bid, bidder, phone, email, -1L);
+        return updateBid(firebaseKey, bid, bidder, phone, email, -1L);
     }
 
-    private static void updateBid(String firebaseKey, double bid, String bidder,
-                                  String phone, String email, long endTime) {
+    private static boolean updateBid(String firebaseKey, double bid, String bidder,
+                                   String phone, String email, long endTime) {
         if (firebaseKey == null || firebaseKey.isBlank()) {
-            return;
+            return false;
         }
         try {
             String json = "{"
@@ -267,8 +277,11 @@ public class FirebaseService {
             }
             json += "}";
             request("PATCH", "/products/" + firebaseKey + ".json", json);
+            return true;
         } catch (Exception e) {
+            lastError = e.getMessage();
             e.printStackTrace();
+            return false;
         }
     }
 
@@ -500,37 +513,27 @@ public class FirebaseService {
     }
 
     private static String request(String method, String path, String body) throws Exception {
-        URL url = new URL(BASE_URL + withAuth(path));
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        conn.setRequestMethod(method);
-        conn.setRequestProperty("Content-Type", "application/json; charset=utf-8");
-        conn.setRequestProperty("Accept", "application/json");
-        conn.setConnectTimeout(10_000);
-        conn.setReadTimeout(10_000);
+        HttpRequest.BodyPublisher publisher = body == null
+            ? HttpRequest.BodyPublishers.noBody()
+            : HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8);
 
-        if (body != null) {
-            conn.setDoOutput(true);
-            try (OutputStream os = conn.getOutputStream()) {
-                byte[] input = body.getBytes(StandardCharsets.UTF_8);
-                os.write(input, 0, input.length);
-            }
-        }
+        HttpRequest request = HttpRequest.newBuilder()
+            .uri(URI.create(BASE_URL + withAuth(path)))
+            .timeout(Duration.ofSeconds(10))
+            .header("Content-Type", "application/json; charset=utf-8")
+            .header("Accept", "application/json")
+            .method(method, publisher)
+            .build();
 
-        int responseCode = conn.getResponseCode();
-        BufferedReader reader = new BufferedReader(new InputStreamReader(
-            responseCode >= 400 ? conn.getErrorStream() : conn.getInputStream(),
-            StandardCharsets.UTF_8));
-        StringBuilder response = new StringBuilder();
-        String line;
-        while ((line = reader.readLine()) != null) {
-            response.append(line);
-        }
-        reader.close();
+        HttpResponse<String> response = HTTP_CLIENT.send(
+            request,
+            HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8)
+        );
 
-        if (responseCode >= 400) {
-            throw new IllegalStateException("Firebase HTTP " + responseCode + ": " + response);
+        if (response.statusCode() >= 400) {
+            throw new IllegalStateException("Firebase HTTP " + response.statusCode() + ": " + response.body());
         }
-        return response.toString();
+        return response.body();
     }
 
     private static String withAuth(String path) {
@@ -574,5 +577,62 @@ public class FirebaseService {
 
     private static long longValue(JsonObject obj, String member, long fallback) {
         return hasValue(obj, member) ? obj.get(member).getAsLong() : fallback;
+    }
+
+    // ==============================================================
+// UPLOAD ẢNH LÊN FIREBASE STORAGE
+// Trả về public download URL, hoặc null nếu thất bại
+// ==============================================================
+    public static String uploadImage(java.io.File imageFile) {
+        try {
+            // FIX 1: Use the exact bucket name from your Firebase Console screenshot
+            String bucket  = "advanced-programming-group-1.firebasestorage.app";
+            String path    = "products/" + System.currentTimeMillis() + "_" + imageFile.getName();
+            String encoded = java.net.URLEncoder.encode(path, "UTF-8");
+
+            // The URL for the Firebase Storage REST API
+            URL url = new URL(
+                "https://firebasestorage.googleapis.com/v0/b/"
+                + bucket + "/o?uploadType=media&name=" + encoded);
+
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setConnectTimeout(10000); // 10 second timeout
+            conn.setRequestMethod("POST");
+
+            String contentType = imageFile.getName().toLowerCase().endsWith(".png")
+                ? "image/png" : "image/jpeg";
+            conn.setRequestProperty("Content-Type", contentType);
+
+            // FIX 2: Ensure the Token is actually sent
+            if (client.service.AuthService.idToken != null) {
+                conn.setRequestProperty("Authorization", "Bearer " + client.service.AuthService.idToken);
+                System.out.println("Using Auth Token for upload...");
+            } else {
+                System.out.println("WARNING: No idToken found. Upload might fail due to Rules.");
+            }
+
+            conn.setDoOutput(true);
+
+            // Stream the file bytes to Firebase
+            try (java.io.OutputStream os = conn.getOutputStream()) {
+                java.nio.file.Files.copy(imageFile.toPath(), os);
+            }
+
+            int code = conn.getResponseCode();
+            System.out.println("UPLOAD RESPONSE CODE: " + code);
+
+            if (code == 200) {
+                // Return the public download URL
+                return "https://firebasestorage.googleapis.com/v0/b/"
+                    + bucket + "/o/" + encoded + "?alt=media";
+            } else {
+                // If it's not 200, something went wrong (likely 403 or 404)
+                return null;
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 }

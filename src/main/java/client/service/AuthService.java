@@ -14,6 +14,7 @@ public class AuthService {
     public static String currentUserEmail = null;
     public static String currentUserIdToken = null;
     public static String currentUserLocalId = null;
+    public static String idToken = null;
 
     private static final String API_KEY =
         "AIzaSyAGYt-4tSNEK6U2qZZvkBTYDglkygMlqVA";
@@ -40,6 +41,7 @@ public class AuthService {
         currentUserEmail = null;
         currentUserIdToken = null;
         currentUserLocalId = null;
+        idToken = null;
     }
 
     private static boolean authenticate(String endpoint, String email, String password, String label) {
@@ -70,6 +72,7 @@ public class AuthService {
                 currentUserEmail = null;
                 currentUserIdToken = null;
                 currentUserLocalId = null;
+                idToken = null;
                 return false;
             }
 
@@ -77,6 +80,7 @@ public class AuthService {
             currentUserEmail = email;
             currentUserIdToken = obj.has("idToken") ? obj.get("idToken").getAsString() : null;
             currentUserLocalId = obj.has("localId") ? obj.get("localId").getAsString() : null;
+            idToken = currentUserIdToken;  // Keep for backward compatibility
             FirebaseService.currentUserEmail = email;
             return currentUserIdToken != null && !currentUserIdToken.isBlank();
         } catch (Exception e) {
@@ -84,6 +88,7 @@ public class AuthService {
             currentUserEmail = null;
             currentUserIdToken = null;
             currentUserLocalId = null;
+            idToken = null;
             return false;
         }
     }

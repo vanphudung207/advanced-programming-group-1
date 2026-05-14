@@ -29,8 +29,10 @@ import javafx.stage.StageStyle;
 import javafx.util.Duration;
 
 import java.text.NumberFormat;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 public class AuctionRoomController {
 
@@ -47,8 +49,23 @@ public class AuctionRoomController {
 
     private Product currentProduct;
     private Timeline countdownTimer;
+    private Timeline remoteRefreshTimer;
     private boolean auctionEnded = false;
     private boolean resultShown = false;
+    private boolean remoteRefreshInFlight = false;
+    private boolean bidHistoryHeaderShown = false;
+    private final Set<String> loadedBidHistoryKeys = new HashSet<>();
+    private final Set<String> loadedBidHistoryLines = new HashSet<>();
+
+    private static class RemoteState {
+        private final Product product;
+        private final List<FirebaseService.BidHistoryEntry> history;
+
+        private RemoteState(Product product, List<FirebaseService.BidHistoryEntry> history) {
+            this.product = product;
+            this.history = history;
+        }
+    }
 
     public void setProductData(Product product) {
         currentProduct = product;
@@ -63,6 +80,7 @@ public class AuctionRoomController {
         configureBidControls();
         loadBidHistoryAsync();
         refreshProductFromFirebaseAsync();
+        startRemoteRefreshTimer();
 
         Platform.runLater(() -> {
             try {
@@ -137,14 +155,7 @@ public class AuctionRoomController {
 
         task.setOnSucceeded(e -> {
             List<FirebaseService.BidHistoryEntry> history = task.getValue();
-            if (history == null || history.isEmpty()) {
-                return;
-            }
-            listBidHistory.getItems().add(0, "── Lịch sử trả giá trước đó ──");
-            for (FirebaseService.BidHistoryEntry entry : history) {
-                listBidHistory.getItems().add(1, entry.getLine());
-            }
-            listBidHistory.getItems().add(1 + history.size(), "─────────────────────────────");
+            appendNewBidHistoryEntries(history);
         });
 
         Thread thread = new Thread(task);
@@ -153,6 +164,11 @@ public class AuctionRoomController {
     }
 
     private void refreshProductFromFirebaseAsync() {
+        if (currentProduct == null || remoteRefreshInFlight) {
+            return;
+        }
+        remoteRefreshInFlight = true;
+
         Task<Product> task = new Task<>() {
             @Override
             protected Product call() {
@@ -161,6 +177,7 @@ public class AuctionRoomController {
         };
 
         task.setOnSucceeded(e -> {
+            remoteRefreshInFlight = false;
             Product latest = task.getValue();
             if (latest == null) {
                 return;
@@ -172,9 +189,105 @@ public class AuctionRoomController {
             }
         });
 
+        task.setOnFailed(e -> remoteRefreshInFlight = false);
+        task.setOnCancelled(e -> remoteRefreshInFlight = false);
+
         Thread thread = new Thread(task);
         thread.setDaemon(true);
         thread.start();
+    }
+
+    private void startRemoteRefreshTimer() {
+        if (auctionEnded) {
+            return;
+        }
+        if (remoteRefreshTimer != null) {
+            remoteRefreshTimer.stop();
+        }
+
+        remoteRefreshTimer = new Timeline(new KeyFrame(Duration.seconds(2), e -> refreshRemoteStateAsync()));
+        remoteRefreshTimer.setCycleCount(Timeline.INDEFINITE);
+        remoteRefreshTimer.play();
+    }
+
+    private void refreshRemoteStateAsync() {
+        if (currentProduct == null
+                || currentProduct.getFirebaseKey() == null
+                || currentProduct.getFirebaseKey().isBlank()
+                || auctionEnded
+                || remoteRefreshInFlight) {
+            return;
+        }
+
+        remoteRefreshInFlight = true;
+        Task<RemoteState> task = new Task<>() {
+            @Override
+            protected RemoteState call() {
+                String key = currentProduct.getFirebaseKey();
+                Product latest = FirebaseService.getProductByKey(key);
+                List<FirebaseService.BidHistoryEntry> history =
+                    FirebaseService.loadBidHistorySync(key, null);
+                return new RemoteState(latest, history);
+            }
+        };
+
+        task.setOnSucceeded(e -> {
+            remoteRefreshInFlight = false;
+            RemoteState state = task.getValue();
+            if (state == null) {
+                return;
+            }
+
+            if (state.product != null) {
+                applyLatestProduct(state.product);
+                if (currentProduct.isEnded() && !auctionEnded) {
+                    auctionEnded = true;
+                    endAuction(false);
+                }
+            }
+
+            appendNewBidHistoryEntries(state.history);
+        });
+
+        task.setOnFailed(e -> remoteRefreshInFlight = false);
+        task.setOnCancelled(e -> remoteRefreshInFlight = false);
+
+        Thread thread = new Thread(task);
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    private void appendNewBidHistoryEntries(List<FirebaseService.BidHistoryEntry> history) {
+        if (history == null || history.isEmpty() || listBidHistory == null) {
+            return;
+        }
+
+        List<FirebaseService.BidHistoryEntry> newEntries = new java.util.ArrayList<>();
+        for (FirebaseService.BidHistoryEntry entry : history) {
+            if (entry == null || entry.getLine() == null || entry.getLine().isBlank()) {
+                continue;
+            }
+
+            String key = entry.getKey() != null && !entry.getKey().isBlank()
+                ? entry.getKey()
+                : entry.getLine();
+            if (loadedBidHistoryKeys.add(key) && loadedBidHistoryLines.add(entry.getLine())) {
+                newEntries.add(entry);
+            }
+        }
+
+        if (newEntries.isEmpty()) {
+            return;
+        }
+
+        if (!bidHistoryHeaderShown) {
+            listBidHistory.getItems().add(0, "── Lịch sử trả giá trước đó ──");
+            bidHistoryHeaderShown = true;
+        }
+
+        for (int i = newEntries.size() - 1; i >= 0; i--) {
+            listBidHistory.getItems().add(1, newEntries.get(i).getLine());
+        }
     }
 
     private void applyLatestProduct(Product latest) {
@@ -185,7 +298,16 @@ public class AuctionRoomController {
         currentProduct.setHighestBidder(latest.getHighestBidder());
         currentProduct.setHighestBidderPhone(latest.getHighestBidderPhone());
         currentProduct.setHighestBidderEmail(latest.getHighestBidderEmail());
-        renderProduct();
+        lblCurrentPrice.setText(formatVND(currentProduct.getCurrentBid()));
+        updateTimerDisplay();
+
+        if (lblProductDescription != null) {
+            String desc = currentProduct.getDescription();
+            lblProductDescription.setText(
+                desc != null && !desc.isBlank()
+                    ? desc
+                    : "Người bán chưa cung cấp mô tả chi tiết.");
+        }
     }
 
     private void startCountdownTimer() {
@@ -243,6 +365,7 @@ public class AuctionRoomController {
     }
 
     private void endAuction(boolean updateFirebase) {
+        stopRemoteRefreshTimer();
         lblTimer.setText("Đã đóng!");
         txtBidAmount.setDisable(true);
         btnSubmitBid.setDisable(true);
@@ -349,9 +472,10 @@ public class AuctionRoomController {
                 }
 
                 lblCurrentPrice.setText(formatVND(result.currentBid));
-                listBidHistory.getItems().add(0,
-                    "[" + FirebaseService.formatTimestamp(System.currentTimeMillis()) + "] "
-                        + result.highestBidder + " trả: " + formatVND(result.currentBid));
+                String bidLine = "[" + FirebaseService.formatTimestamp(System.currentTimeMillis()) + "] "
+                    + result.highestBidder + " trả: " + formatVND(result.currentBid);
+                loadedBidHistoryLines.add(bidLine);
+                listBidHistory.getItems().add(0, bidLine);
                 if (result.extended) {
                     listBidHistory.getItems().add(0, "Anti-sniping: cộng thêm 10 giây.");
                 }
@@ -389,6 +513,7 @@ public class AuctionRoomController {
             if (countdownTimer != null) {
                 countdownTimer.stop();
             }
+            stopRemoteRefreshTimer();
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/client/view/ProductList.fxml"));
             Parent root = loader.load();
             Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
@@ -459,6 +584,13 @@ public class AuctionRoomController {
         }
         lblTimer.setText(String.format("Còn lại: %02d:%02d:%02d",
             secs / 3600, (secs % 3600) / 60, secs % 60));
+    }
+
+    private void stopRemoteRefreshTimer() {
+        if (remoteRefreshTimer != null) {
+            remoteRefreshTimer.stop();
+            remoteRefreshTimer = null;
+        }
     }
 
     private String formatVND(double amount) {

@@ -23,6 +23,8 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.shape.Rectangle;
@@ -268,6 +270,8 @@ public class ProductListController {
             + "-fx-effect:dropshadow(three-pass-box,rgba(0,0,0,0.3),15,0,0,5);-fx-cursor:hand;";
         card.setStyle(normalStyle);
         card.setPrefWidth(220);
+        card.setMinHeight(405);
+        card.setPrefHeight(405);
         card.setAlignment(Pos.TOP_CENTER);
         card.setOnMouseEntered(e -> card.setStyle(hoverStyle));
         card.setOnMouseExited(e -> card.setStyle(normalStyle));
@@ -290,7 +294,9 @@ public class ProductListController {
         imgView.setClip(clip);
 
         StackPane imgContainer = new StackPane(imgView);
-        imgContainer.setPrefHeight(130);
+        imgContainer.setMinSize(190, 130);
+        imgContainer.setPrefSize(190, 130);
+        imgContainer.setMaxSize(190, 130);
         Label badge = new Label();
         refreshBadge(badge, product);
         StackPane.setAlignment(badge, Pos.TOP_LEFT);
@@ -300,20 +306,28 @@ public class ProductListController {
         Label nameLabel = new Label(product.getName() != null ? product.getName() : "Sản phẩm ẩn danh");
         nameLabel.setWrapText(true);
         nameLabel.setMaxWidth(190);
+        nameLabel.setMinHeight(72);
+        nameLabel.setPrefHeight(72);
+        nameLabel.setMaxHeight(72);
+        nameLabel.setAlignment(Pos.TOP_LEFT);
         nameLabel.setStyle("-fx-font-weight:bold;-fx-font-size:15px;-fx-text-fill:#2c3e50;");
 
         Label bidSub = new Label("Giá hiện tại");
         bidSub.setStyle("-fx-text-fill:#7f8c8d;-fx-font-size:11px;");
 
         Label priceLabel = new Label(String.format("%,.0f VNĐ", product.getCurrentBid()));
+        priceLabel.setMaxWidth(190);
         priceLabel.setStyle("-fx-text-fill:#e74c3c;-fx-font-weight:bold;-fx-font-size:16px;");
 
         Label timeLabel = new Label();
         refreshTimeLabel(timeLabel, product);
 
         VBox priceBox = new VBox(8);
+        priceBox.setMinHeight(86);
+        priceBox.setPrefHeight(86);
+        priceBox.setMaxHeight(86);
         priceBox.setAlignment(Pos.CENTER);
-        priceBox.getChildren().addAll(priceLabel, timeLabel);
+        priceBox.getChildren().addAll(bidSub, priceLabel, timeLabel);
 
         Button btnBid = new Button(product.isEnded() ? "Xem kết quả" : "Bid Now");
         btnBid.setStyle(product.isEnded()
@@ -322,7 +336,10 @@ public class ProductListController {
         btnBid.setMaxWidth(Double.MAX_VALUE);
         btnBid.setOnAction(ev -> openAuctionRoom(product, ev));
 
-        card.getChildren().addAll(imgContainer, nameLabel, bidSub, priceBox, btnBid);
+        Region spacer = new Region();
+        VBox.setVgrow(spacer, Priority.ALWAYS);
+
+        card.getChildren().addAll(imgContainer, nameLabel, priceBox, spacer, btnBid);
         timerLabels.add(timeLabel);
         badgeLabels.add(badge);
         cardProducts.add(product);

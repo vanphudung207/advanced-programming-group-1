@@ -34,6 +34,7 @@ public class AddProductController {
     @FXML private Label lblImageStatus;
 
     private String selectedImagePath = null;
+    private java.io.File selectedImageFile = null;
 
     @FXML
     public void initialize() {
@@ -103,10 +104,22 @@ public class AddProductController {
                             ? AuthService.currentUserEmail : "Khách vãng lai";
 
             // CONSTRUCTOR MỚI CÓ description
+            lblImageStatus.setText("Đang tải ảnh lên...");
+            String imageUrl = FirebaseService.uploadImage(selectedImageFile);
+            if (imageUrl == null) {
+                String detail = FirebaseService.getLastError();
+                showAlert(AlertType.ERROR, "Lỗi",
+                    detail == null || detail.isBlank()
+                        ? "Không thể tải ảnh lên Firebase Storage. Kiểm tra lại kết nối!"
+                        : "Không thể tải ảnh lên Firebase Storage:\n" + detail);
+                lblImageStatus.setText("Tải ảnh thất bại!");
+                return;
+            }
+
             Product newProduct = new Product(
                 null, name, description,
                 startPrice, timeRemaining,
-                selectedImagePath, seller, category,
+                imageUrl, seller, category,
                 stepPrice, "active", endTime
             );
 
@@ -139,6 +152,7 @@ public class AddProductController {
         Stage stage = (Stage) ((Node) event.getSource()).getScene().getWindow();
         File file = fc.showOpenDialog(stage);
         if (file != null) {
+            selectedImageFile = file;
             selectedImagePath = file.toURI().toString();
             imgPreview.setImage(new Image(selectedImagePath));
             lblImageStatus.setText("Đã chọn: " + file.getName());
