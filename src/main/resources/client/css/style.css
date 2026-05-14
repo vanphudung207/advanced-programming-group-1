@@ -55,3 +55,356 @@
 .form-box .label {
     -fx-text-fill: white;
 }
+
+/* =======================================================
+   THEME CHO ADMIN DASHBOARD
+   ======================================================= */
+
+/* 1. Thanh menu bên trái (Sidebar) */
+.admin-sidebar {
+    -fx-background-color: #1e293b;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.3), 10, 0, 2, 0);
+}
+
+/* 2. Nút bấm trong Sidebar */
+.sidebar-button {
+    -fx-background-color: transparent;
+    -fx-text-fill: #94a3b8;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-alignment: CENTER_LEFT;
+    -fx-padding: 12px 20px;
+    -fx-background-radius: 8px;
+    -fx-cursor: hand;
+}
+/* Hiệu ứng khi nút Sidebar ĐANG ĐƯỢC CHỌN (Active) */
+.sidebar-button-active {
+    -fx-background-color: #334155;
+    -fx-text-fill: #deff9a;
+    -fx-border-color: transparent transparent transparent #deff9a; /* Vạch sáng bên trái */
+    -fx-border-width: 0 0 0 4px;
+    -fx-background-radius: 0 8px 8px 0;
+}
+
+/* Hiệu ứng khi di chuột vào nút Sidebar */
+.sidebar-button:hover {
+    -fx-background-color: #334155;
+    -fx-text-fill: #deff9a; /* Đổi màu chữ phát sáng */
+    -fx-translate-x: 5px;   /* Hiệu ứng nút trượt nhẹ sang phải */
+}
+
+.admin-root {
+    -fx-background-color: #0f172a;
+}
+
+.admin-brand-title {
+    -fx-text-fill: #deff9a;
+    -fx-font-weight: bold;
+    -fx-font-size: 22px;
+}
+
+.admin-brand-subtitle {
+    -fx-text-fill: #94a3b8;
+    -fx-font-size: 12px;
+}
+
+.admin-page-title {
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 32px;
+    -fx-font-weight: bold;
+}
+
+.admin-stat-label {
+    -fx-text-fill: #94a3b8;
+    -fx-font-size: 16px;
+}
+
+.admin-stat-number,
+.admin-chart-title {
+    -fx-text-fill: #deff9a;
+    -fx-font-weight: bold;
+}
+
+.admin-stat-number {
+    -fx-font-size: 36px;
+}
+
+.admin-chart-title {
+    -fx-font-size: 18px;
+}
+
+.danger-action-button {
+    -fx-background-color: #ef4444;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-padding: 12px;
+    -fx-background-radius: 8px;
+    -fx-cursor: hand;
+}
+
+.danger-action-button:hover {
+    -fx-background-color: #dc2626;
+}
+
+/* 3. Thẻ thống kê (Stat Card) nổi 3D */
+.stat-card {
+    -fx-background-color: linear-gradient(to bottom right, #1e293b, #0f172a);
+    -fx-padding: 25px;
+    -fx-background-radius: 15px;
+    -fx-border-color: #334155;
+    -fx-border-radius: 15px;
+    -fx-border-width: 1px;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.4), 15, 0, 5, 5);
+}
+
+/* Hiệu ứng khi di chuột vào thẻ thống kê */
+.stat-card:hover {
+    -fx-border-color: #deff9a; /* Viền sáng lên */
+    -fx-translate-y: -5px;     /* Thẻ nhấc lên cao một chút */
+    -fx-effect: dropshadow(three-pass-box, rgba(222,255,154,0.2), 20, 0, 0, 8); /* Tỏa hào quang */
+}
+
+/* 4. Bảng dữ liệu (Table) của Admin */
+.admin-table {
+    -fx-background-color: #1e293b;
+    -fx-background-radius: 10px;
+    -fx-border-color: #334155;
+    -fx-border-radius: 10px;
+}
+.admin-table .column-header-background {
+    -fx-background-color: #0f172a;
+    -fx-background-radius: 10px 10px 0 0;
+}
+.admin-table .column-header .label {
+    -fx-text-fill: #deff9a;
+    -fx-font-weight: bold;
+    -fx-font-size: 14px;
+}
+.admin-table .table-row-cell {
+    -fx-background-color: #1e293b;
+    -fx-text-fill: white;
+    -fx-border-color: transparent transparent #334155 transparent;
+    -fx-border-width: 1px;
+}
+.admin-table .table-row-cell:hover {
+    -fx-background-color: #334155; /* Đổi màu dòng khi di chuột qua */
+}
+/* Đổi màu chữ bên trong các ô của bảng thành màu trắng sáng */
+.admin-table .table-cell {
+    -fx-text-fill: #ffffff; 
+    -fx-font-size: 15px;
+    -fx-alignment: CENTER_LEFT;
+}
+
+/* Tùy chọn: Đổi màu dòng được chọn (Selected Row) để không bị chìm chữ */
+.admin-table .table-row-cell:selected {
+    -fx-background-color: #3b82f6; /* Màu xanh dương sáng khi click chọn dòng */
+}
+.admin-table .table-row-cell:selected .table-cell {
+    -fx-text-fill: white;
+}
+/* 5. Giao diện Biểu đồ (Chart) cho Dark Theme */
+.chart-pie-label {
+    -fx-fill: #ffffff; /* Chữ hiển thị trên từng múi biểu đồ */
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+}
+.chart-legend {
+    -fx-background-color: transparent; /* Xóa nền trắng của chú thích */
+}
+.chart-legend-item {
+    -fx-text-fill: #cbd5e1; /* Chữ ở phần chú thích bên cạnh */
+    -fx-font-size: 14px;
+}
+
+/* =======================================================
+   USER PRODUCT MANAGEMENT
+   ======================================================= */
+
+.user-products-root {
+    -fx-background-color: #f5f7fb;
+}
+
+.user-products-topbar {
+    -fx-background-color: linear-gradient(to right, #e64a19, #f97316);
+    -fx-padding: 14px 24px;
+    -fx-effect: dropshadow(three-pass-box, rgba(15,23,42,0.18), 12, 0, 0, 3);
+}
+
+.user-products-title {
+    -fx-text-fill: white;
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+}
+
+.user-products-subtitle {
+    -fx-text-fill: #ffedd5;
+    -fx-font-size: 12px;
+}
+
+.user-back-button {
+    -fx-background-color: rgba(255,255,255,0.95);
+    -fx-text-fill: #c2410c;
+    -fx-font-weight: bold;
+    -fx-padding: 8px 16px;
+    -fx-background-radius: 6px;
+    -fx-border-radius: 6px;
+    -fx-cursor: hand;
+}
+
+.user-back-button:hover {
+    -fx-background-color: white;
+    -fx-effect: dropshadow(three-pass-box, rgba(15,23,42,0.18), 8, 0, 0, 2);
+}
+
+.user-primary-button {
+    -fx-background-color: #1f2937;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-padding: 8px 18px;
+    -fx-background-radius: 6px;
+    -fx-cursor: hand;
+}
+
+.user-primary-button:hover {
+    -fx-background-color: #111827;
+}
+
+.user-products-content {
+    -fx-background-color: #f5f7fb;
+    -fx-padding: 28px;
+}
+
+.user-summary-card {
+    -fx-background-color: white;
+    -fx-padding: 18px 22px;
+    -fx-background-radius: 8px;
+    -fx-border-color: #e2e8f0;
+    -fx-border-radius: 8px;
+    -fx-effect: dropshadow(three-pass-box, rgba(15,23,42,0.08), 12, 0, 0, 3);
+}
+
+.user-summary-label {
+    -fx-text-fill: #64748b;
+    -fx-font-size: 13px;
+}
+
+.user-summary-value {
+    -fx-text-fill: #1f2937;
+    -fx-font-size: 17px;
+    -fx-font-weight: bold;
+}
+
+.user-summary-count {
+    -fx-text-fill: #e64a19;
+    -fx-font-size: 26px;
+    -fx-font-weight: bold;
+}
+
+.user-products-table {
+    -fx-background-color: white;
+    -fx-background-radius: 8px;
+    -fx-border-color: #d7dde5;
+    -fx-border-radius: 8px;
+    -fx-effect: dropshadow(three-pass-box, rgba(15,23,42,0.06), 10, 0, 0, 2);
+}
+
+.user-products-table .column-header-background {
+    -fx-background-color: #f8fafc;
+    -fx-background-radius: 8px 8px 0 0;
+    -fx-border-color: transparent transparent #e2e8f0 transparent;
+    -fx-border-width: 0 0 1px 0;
+}
+
+.user-products-table .column-header {
+    -fx-background-color: transparent;
+    -fx-padding: 10px 8px;
+}
+
+.user-products-table .column-header .label {
+    -fx-text-fill: #475569;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+}
+
+.user-products-table .table-row-cell {
+    -fx-background-color: white;
+    -fx-border-color: transparent transparent #edf2f7 transparent;
+    -fx-border-width: 0 0 1px 0;
+    -fx-cell-size: 52px;
+}
+
+.user-products-table .table-row-cell:odd {
+    -fx-background-color: #fbfdff;
+}
+
+.user-products-table .table-row-cell:hover {
+    -fx-background-color: #fff7ed;
+}
+
+.user-products-table .table-row-cell:selected {
+    -fx-background-color: #e0f2fe;
+}
+
+.user-products-table .table-cell {
+    -fx-text-fill: #1f2937;
+    -fx-font-size: 14px;
+    -fx-alignment: CENTER_LEFT;
+    -fx-padding: 8px 10px;
+}
+
+.status-badge-active {
+    -fx-background-color: #dcfce7;
+    -fx-text-fill: #166534;
+    -fx-font-weight: bold;
+    -fx-font-size: 12px;
+    -fx-padding: 4px 10px;
+    -fx-background-radius: 6px;
+}
+
+.status-badge-ended {
+    -fx-background-color: #e5e7eb;
+    -fx-text-fill: #4b5563;
+    -fx-font-weight: bold;
+    -fx-font-size: 12px;
+    -fx-padding: 4px 10px;
+    -fx-background-radius: 6px;
+}
+
+.user-action-edit {
+    -fx-background-color: #2563eb;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-padding: 6px 16px;
+    -fx-background-radius: 6px;
+    -fx-cursor: hand;
+}
+
+.user-action-edit:hover {
+    -fx-background-color: #1d4ed8;
+}
+
+.user-action-edit:disabled {
+    -fx-background-color: #cbd5e1;
+    -fx-text-fill: #64748b;
+    -fx-opacity: 1;
+}
+
+.user-action-delete {
+    -fx-background-color: #dc2626;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-padding: 6px 16px;
+    -fx-background-radius: 6px;
+    -fx-cursor: hand;
+}
+
+.user-action-delete:hover {
+    -fx-background-color: #b91c1c;
+}
+
+.user-table-empty {
+    -fx-text-fill: #64748b;
+    -fx-font-size: 16px;
+    -fx-font-style: italic;
+}

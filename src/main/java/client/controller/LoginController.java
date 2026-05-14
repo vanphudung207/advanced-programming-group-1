@@ -35,7 +35,7 @@ public class LoginController {
 
     @FXML
     private void handleLoginAction(ActionEvent event) {
-        String enteredEmail    = txtEmail.getText().trim();
+        String enteredEmail = txtEmail.getText().trim();
         String enteredPassword = txtPassword.getText().trim();
 
         lblError.setText("");
@@ -46,53 +46,70 @@ public class LoginController {
             return;
         }
 
-        // Tài khoản Admin cố định
-        if (enteredEmail.equals("Admin@gmail.com") && enteredPassword.equals("nhom1hehe")) {
-            // ĐÃ XÓA DÒNG LỖI - Chỉ dùng biến gốc của đồng đội
-            AuthService.currentUserEmail = enteredEmail;
-            FirebaseService.currentUserEmail = enteredEmail;
+        if (enteredEmail.equalsIgnoreCase("Admin@gmail.com")
+                && ("nhom1".equals(enteredPassword) || "nhom1hehe".equals(enteredPassword))) {
+            setCurrentUser(enteredEmail);
             syncUserAsync(enteredEmail);
-            navigateTo(event,
-                "/client/view/ProductList.fxml",
-                "Online Auction System - Danh sách sản phẩm");
+            navigateTo(event, "/client/view/Admin.fxml", "Online Auction System - Admin");
             return;
         }
 
-        if (btnLogin != null) btnLogin.setDisable(true);
+        if (btnLogin != null) {
+            btnLogin.setDisable(true);
+        }
         lblError.setText("Đang đăng nhập...");
         lblError.setStyle("-fx-text-fill: #3498db;");
 
-        Task<Boolean> loginTask = new Task<>() {
+        Task<String> loginTask = new Task<>() {
             @Override
-            protected Boolean call() {
-                return AuthService.login(enteredEmail, enteredPassword);
+            protected String call() {
+                boolean authOk = AuthService.login(enteredEmail, enteredPassword);
+                if (!authOk) {
+                    return "INVALID_CREDENTIALS";
+                }
+
+                FirebaseService.syncOldUserIfNeeded(enteredEmail);
+                String status = FirebaseService.getUserStatus(enteredEmail);
+                return "banned".equals(status) ? "BANNED" : "SUCCESS";
             }
         };
 
         loginTask.setOnSucceeded(e -> {
-            if (loginTask.getValue()) {
-                // Đăng nhập thành công: ĐÃ XÓA DÒNG LỖI
-                AuthService.currentUserEmail = enteredEmail;
-                FirebaseService.currentUserEmail = enteredEmail;
-                syncUserAsync(enteredEmail);
-
+            String result = loginTask.getValue();
+            if ("SUCCESS".equals(result)) {
+                setCurrentUser(enteredEmail);
                 navigateTo(event,
                     "/client/view/ProductList.fxml",
                     "Online Auction System - Danh sách sản phẩm");
+            } else if ("BANNED".equals(result)) {
+                AuthService.logout();
+                FirebaseService.currentUserEmail = null;
+                FirebaseService.registeredUsername = null;
+                lblError.setText("Tài khoản của bạn đã bị khóa bởi Quản trị viên!");
+                lblError.setStyle("-fx-text-fill: #e74c3c; -fx-font-weight: bold;");
+                if (btnLogin != null) {
+                    btnLogin.setDisable(false);
+                }
             } else {
                 lblError.setText("Sai email hoặc mật khẩu! Vui lòng thử lại.");
                 lblError.setStyle("-fx-text-fill: #e74c3c;");
-                if (btnLogin != null) btnLogin.setDisable(false);
+                if (btnLogin != null) {
+                    btnLogin.setDisable(false);
+                }
             }
         });
 
         loginTask.setOnFailed(e -> {
             lblError.setText("Lỗi kết nối. Kiểm tra lại mạng!");
             lblError.setStyle("-fx-text-fill: #e74c3c;");
-            if (btnLogin != null) btnLogin.setDisable(false);
+            if (btnLogin != null) {
+                btnLogin.setDisable(false);
+            }
         });
 
-        new Thread(loginTask).start();
+        Thread thread = new Thread(loginTask);
+        thread.setDaemon(true);
+        thread.start();
     }
 
     @FXML
@@ -110,6 +127,12 @@ public class LoginController {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private void setCurrentUser(String email) {
+        AuthService.currentUserEmail = email;
+        FirebaseService.currentUserEmail = email;
+        FirebaseService.registeredUsername = email;
     }
 
     private void syncUserAsync(String email) {

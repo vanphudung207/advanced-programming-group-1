@@ -5,50 +5,37 @@ public class Product {
     private String id;
     private String firebaseKey;
     private String name;
-    private String description;   // ← THÊM MỚI: mô tả chi tiết từ form đăng
+    private String description;
     private double currentBid;
     private String timeRemaining;
     private String imagePath;
     private String sellerUsername;
     private String category;
     private double stepPrice;
-
-    // Trạng thái phiên
-    private String status = "active";       // "active" | "ended"
-
-    /**
-     * endTime: Unix timestamp (mili-giây) lúc phiên kết thúc.
-     * Đây là nguồn sự thật duy nhất cho thời gian còn lại.
-     */
+    private String status = "active";
     private long endTime = 0L;
-
-    // Thông tin người thắng
-    private String highestBidder      = null;
+    private String highestBidder = null;
     private String highestBidderPhone = null;
     private String highestBidderEmail = null;
 
-    // =========================================================================
-    // CONSTRUCTOR ĐẦY ĐỦ (dùng khi load từ Firebase — có endTime)
-    // =========================================================================
     public Product(String id, String name, String description,
                    double currentBid, String timeRemaining,
                    String imagePath, String sellerUsername, String category,
                    double stepPrice, String status, long endTime) {
-        this.id            = id;
-        this.firebaseKey   = id;
-        this.name          = name;
-        this.description   = description;   // ← THÊM
-        this.currentBid    = currentBid;
+        this.id = id;
+        this.firebaseKey = id;
+        this.name = name;
+        this.description = description;
+        this.currentBid = currentBid;
         this.timeRemaining = timeRemaining;
-        this.imagePath     = imagePath;
-        this.sellerUsername= sellerUsername;
-        this.category      = category;
-        this.stepPrice     = stepPrice;
-        this.status        = (status != null) ? status : "active";
-        this.endTime       = endTime;
+        this.imagePath = imagePath;
+        this.sellerUsername = sellerUsername;
+        this.category = category;
+        this.stepPrice = stepPrice;
+        this.status = status != null ? status : "active";
+        this.endTime = endTime;
     }
 
-    // Constructor tương thích ngược KHÔNG có description (để không vỡ các chỗ khác)
     public Product(String id, String name, double currentBid, String timeRemaining,
                    String imagePath, String sellerUsername, String category,
                    double stepPrice, String status, long endTime) {
@@ -56,7 +43,13 @@ public class Product {
              category, stepPrice, status, endTime);
     }
 
-    // Constructor tương thích ngược — secondsRemaining
+    public Product(String id, String name, double currentBid, String timeRemaining,
+                   String imagePath, String description, String sellerUsername,
+                   String category, double stepPrice, String status, long endTime) {
+        this(id, name, description, currentBid, timeRemaining, imagePath,
+             sellerUsername, category, stepPrice, status, endTime);
+    }
+
     public Product(String id, String name, double currentBid, String timeRemaining,
                    String imagePath, String sellerUsername, String category,
                    double stepPrice, String status, int secondsRemaining) {
@@ -79,49 +72,47 @@ public class Product {
              "Khác", 0.0, "active", 60);
     }
 
-    // =========================================================================
-    // TIỆN ÍCH TÍNH THỜI GIAN CÒN LẠI
-    // =========================================================================
     public int getSecondsRemainingNow() {
-        if ("ended".equals(status) || endTime <= 0) return 0;
+        if ("ended".equals(status) || endTime <= 0) {
+            return 0;
+        }
         long diff = endTime - System.currentTimeMillis();
         return diff > 0 ? (int) (diff / 1000) : 0;
     }
 
     public boolean isEnded() {
-        if ("ended".equals(status)) return true;
-        if (endTime > 0 && System.currentTimeMillis() >= endTime) return true;
-        return false;
+        return "ended".equals(status) || (endTime > 0 && System.currentTimeMillis() >= endTime);
     }
 
-    // =========================================================================
-    // GETTERS
-    // =========================================================================
-    public String getId()                 { return id; }
-    public String getFirebaseKey()        { return firebaseKey; }
-    public String getName()               { return name; }
-    public String getDescription()        { return description; }   // ← THÊM
-    public double getCurrentBid()         { return currentBid; }
-    public String getTimeRemaining()      { return timeRemaining; }
-    public String getImagePath()          { return imagePath; }
-    public String getSellerUsername()     { return sellerUsername; }
-    public String getCategory()           { return category; }
-    public double getStepPrice()          { return stepPrice; }
-    public String getStatus()             { return status; }
-    public long   getEndTime()            { return endTime; }
-    public String getHighestBidder()      { return highestBidder; }
+    public String getId() { return id; }
+    public String getFirebaseKey() { return firebaseKey; }
+    public String getName() { return name; }
+    public String getDescription() { return description; }
+    public double getCurrentBid() { return currentBid; }
+    public String getTimeRemaining() { return timeRemaining; }
+    public String getImagePath() { return imagePath; }
+    public String getSellerUsername() { return sellerUsername; }
+    public String getCategory() { return category; }
+    public double getStepPrice() { return stepPrice; }
+    public String getStatus() { return status; }
+    public long getEndTime() { return endTime; }
+    public String getHighestBidder() { return highestBidder; }
     public String getHighestBidderPhone() { return highestBidderPhone; }
     public String getHighestBidderEmail() { return highestBidderEmail; }
 
-    // =========================================================================
-    // SETTERS
-    // =========================================================================
-    public void setFirebaseKey(String k)         { this.firebaseKey = k; }
-    public void setDescription(String d)         { this.description = d; }   // ← THÊM
-    public void setCurrentBid(double v)          { this.currentBid = v; }
-    public void setStatus(String s)              { this.status = s; }
-    public void setEndTime(long t)               { this.endTime = t; }
-    public void setHighestBidder(String v)       { this.highestBidder = v; }
-    public void setHighestBidderPhone(String v)  { this.highestBidderPhone = v; }
-    public void setHighestBidderEmail(String v)  { this.highestBidderEmail = v; }
+    public void setId(String value) { this.id = value; }
+    public void setFirebaseKey(String value) { this.firebaseKey = value; }
+    public void setName(String value) { this.name = value; }
+    public void setDescription(String value) { this.description = value; }
+    public void setCurrentBid(double value) { this.currentBid = value; }
+    public void setTimeRemaining(String value) { this.timeRemaining = value; }
+    public void setImagePath(String value) { this.imagePath = value; }
+    public void setSellerUsername(String value) { this.sellerUsername = value; }
+    public void setCategory(String value) { this.category = value; }
+    public void setStepPrice(double value) { this.stepPrice = value; }
+    public void setStatus(String value) { this.status = value; }
+    public void setEndTime(long value) { this.endTime = value; }
+    public void setHighestBidder(String value) { this.highestBidder = value; }
+    public void setHighestBidderPhone(String value) { this.highestBidderPhone = value; }
+    public void setHighestBidderEmail(String value) { this.highestBidderEmail = value; }
 }

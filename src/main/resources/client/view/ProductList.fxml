@@ -38,6 +38,7 @@
                               <Button fx:id="btnInfo" onAction="#handleShowInfo" style="-fx-background-color: transparent; -fx-text-fill: #333; -fx-font-weight: bold; -fx-cursor: hand;" text="Thông tin" />
                            </content>
                         </CustomMenuItem>
+                        <MenuItem mnemonicParsing="false" onAction="#handleGoToUserProducts" text="Quản lý" />
                         <MenuItem mnemonicParsing="false" onAction="#handleLogoutAction" text="Đăng xuất" />
                      </items>
                   </MenuButton>
@@ -71,6 +72,7 @@
                   <Button maxWidth="Infinity" mnemonicParsing="false" onAction="#handleFilterCategory" style="-fx-background-color: transparent; -fx-text-fill: #e64a19; -fx-font-size: 15px; -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 12px; -fx-border-color: #bdc3c7; -fx-border-width: 0 1px 0 0;" text="Tất cả sản phẩm" HBox.hgrow="ALWAYS" />
                   <Button maxWidth="Infinity" mnemonicParsing="false" onAction="#handleFilterCategory" style="-fx-background-color: transparent; -fx-text-fill: #2c3e50; -fx-font-size: 15px; -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 12px; -fx-border-color: #bdc3c7; -fx-border-width: 0 1px 0 0;" text="Điện tử" HBox.hgrow="ALWAYS" />
                   <Button maxWidth="Infinity" mnemonicParsing="false" onAction="#handleFilterCategory" style="-fx-background-color: transparent; -fx-text-fill: #2c3e50; -fx-font-size: 15px; -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 12px; -fx-border-color: #bdc3c7; -fx-border-width: 0 1px 0 0;" text="Gia dụng" HBox.hgrow="ALWAYS" />
+                  <Button maxWidth="Infinity" mnemonicParsing="false" onAction="#handleFilterCategory" style="-fx-background-color: transparent; -fx-text-fill: #2c3e50; -fx-font-size: 15px; -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 12px; -fx-border-color: #bdc3c7; -fx-border-width: 0 1px 0 0;" text="Sách" HBox.hgrow="ALWAYS" />
                   <Button maxWidth="Infinity" mnemonicParsing="false" onAction="#handleFilterCategory" style="-fx-background-color: transparent; -fx-text-fill: #2c3e50; -fx-font-size: 15px; -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 12px; -fx-border-color: #bdc3c7; -fx-border-width: 0 1px 0 0;" text="Thể thao" HBox.hgrow="ALWAYS" />
                   <Button maxWidth="Infinity" mnemonicParsing="false" onAction="#handleFilterCategory" style="-fx-background-color: transparent; -fx-text-fill: #2c3e50; -fx-font-size: 15px; -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 12px;" text="Giải trí" HBox.hgrow="ALWAYS" />
                </children>
@@ -147,7 +149,7 @@
                         </children>
                     </HBox>
 
-                    <FlowPane fx:id="productContainer" hgap="20.0" vgap="20.0" style="-fx-padding: 10px;" />
+                    <FlowPane fx:id="productContainer" alignment="TOP_CENTER" hgap="20.0" vgap="20.0" style="-fx-padding: 10px;" />
                     
                 </children>
             </VBox>

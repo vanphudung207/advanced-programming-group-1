@@ -28,14 +28,19 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.shape.Rectangle;
+import javafx.scene.text.TextAlignment;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
 import java.io.IOException;
+import java.text.NumberFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 public class ProductListController {
 
@@ -49,12 +54,33 @@ public class ProductListController {
 
     private List<Product> currentDisplayedProducts = new ArrayList<>();
     private Timeline globalCardTimer;
+    private String selectedCategory = null;
+    private String allProductsCategory = null;
+    private final List<ProductCardBinding> currentCardBindings = new ArrayList<>();
+    private final Map<String, Image> imageCache = new HashMap<>();
+
+    private static class ProductCardBinding {
+        private final Product product;
+        private final Label priceLabel;
+        private final Label timeLabel;
+        private final Label badge;
+        private final Button bidButton;
+
+        private ProductCardBinding(Product product, Label priceLabel, Label timeLabel,
+                                   Label badge, Button bidButton) {
+            this.product = product;
+            this.priceLabel = priceLabel;
+            this.timeLabel = timeLabel;
+            this.badge = badge;
+            this.bidButton = bidButton;
+        }
+    }
 
     @FXML
     public void initialize() {
-        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("hh:mm a | dd MMM, yyyy");
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("hh:mm a | dd MMM, yyyy");
         Timeline clock = new Timeline(
-            new KeyFrame(Duration.ZERO, e -> lblDateTime.setText(LocalDateTime.now().format(fmt))),
+            new KeyFrame(Duration.ZERO, e -> lblDateTime.setText(LocalDateTime.now().format(formatter))),
             new KeyFrame(Duration.seconds(1))
         );
         clock.setCycleCount(Animation.INDEFINITE);
@@ -74,11 +100,17 @@ public class ProductListController {
         startAutoReload();
 
         if (categoryBox != null) {
-            for (Node n : categoryBox.getChildren()) {
-                if (n instanceof Button) {
-                    applySmoothHover((Button) n);
+            for (Node node : categoryBox.getChildren()) {
+                if (node instanceof Button) {
+                    Button button = (Button) node;
+                    if (allProductsCategory == null) {
+                        allProductsCategory = button.getText();
+                        selectedCategory = allProductsCategory;
+                    }
+                    applySmoothHover(button);
                 }
             }
+            updateCategoryButtonStyles();
         }
         if (btnSearch != null) {
             applySmoothHover(btnSearch);
@@ -90,13 +122,14 @@ public class ProductListController {
             while (!Thread.currentThread().isInterrupted()) {
                 try {
                     Thread.sleep(5_000);
-                    List<Product> freshData = FirebaseService.getAllProducts();
+                    String category = selectedCategory;
+                    List<Product> freshData = loadProductsByCategory(category);
                     Platform.runLater(() -> {
                         boolean searchEmpty = txtSearch == null || txtSearch.getText().trim().isEmpty();
                         boolean defaultSort = cbSort == null || "Mặc định".equals(cbSort.getValue());
-                        if (searchEmpty && defaultSort) {
-                            currentDisplayedProducts = freshData;
-                            loadProductsToGrid(currentDisplayedProducts);
+                        boolean sameCategory = sameCategory(category, selectedCategory);
+                        if (searchEmpty && defaultSort && sameCategory && productContainer != null) {
+                            applyAutoReloadData(freshData);
                         }
                     });
                 } catch (InterruptedException e) {
@@ -110,8 +143,9 @@ public class ProductListController {
 
     private void fetchDataAsync() {
         showLoadingState();
+        String category = selectedCategory;
         Thread thread = new Thread(() -> {
-            List<Product> data = FirebaseService.getAllProducts();
+            List<Product> data = loadProductsByCategory(category);
             Platform.runLater(() -> {
                 currentDisplayedProducts = data;
                 loadProductsToGrid(currentDisplayedProducts);
@@ -136,10 +170,9 @@ public class ProductListController {
                 if (statusCompare != 0) {
                     return statusCompare;
                 }
-                if (!a.isEnded()) {
-                    return Long.compare(a.getEndTime(), b.getEndTime());
-                }
-                return Long.compare(b.getEndTime(), a.getEndTime());
+                return !a.isEnded()
+                    ? Long.compare(a.getEndTime(), b.getEndTime())
+                    : Long.compare(b.getEndTime(), a.getEndTime());
             });
         } else if ("Giá: Thấp đến Cao".equals(value)) {
             sorted.sort((a, b) -> Double.compare(a.getCurrentBid(), b.getCurrentBid()));
@@ -174,10 +207,12 @@ public class ProductListController {
     @FXML
     private void handleFilterCategory(ActionEvent event) {
         String category = ((Button) event.getSource()).getText();
+        selectedCategory = category;
+        updateCategoryButtonStyles();
         showLoadingState();
 
         Thread thread = new Thread(() -> {
-            List<Product> data = FirebaseService.getProductsByCategory(category);
+            List<Product> data = loadProductsByCategory(category);
             Platform.runLater(() -> {
                 currentDisplayedProducts = data;
                 if (txtSearch != null) {
@@ -204,6 +239,156 @@ public class ProductListController {
         fetchDataAsync();
     }
 
+    private List<Product> loadProductsByCategory(String category) {
+        return isAllProductsCategory(category)
+            ? FirebaseService.getAllProducts()
+            : FirebaseService.getProductsByCategory(category);
+    }
+
+    private boolean isAllProductsCategory(String category) {
+        return category == null
+            || allProductsCategory == null
+            || category.equals(allProductsCategory);
+    }
+
+    private boolean sameCategory(String left, String right) {
+        if (left == null) {
+            return right == null;
+        }
+        return left.equals(right);
+    }
+
+    private void updateCategoryButtonStyles() {
+        if (categoryBox == null) {
+            return;
+        }
+
+        int buttonCount = 0;
+        for (Node node : categoryBox.getChildren()) {
+            if (node instanceof Button) {
+                buttonCount++;
+            }
+        }
+
+        int buttonIndex = 0;
+        for (Node node : categoryBox.getChildren()) {
+            if (!(node instanceof Button)) {
+                continue;
+            }
+
+            Button button = (Button) node;
+            boolean active = sameCategory(button.getText(), selectedCategory);
+            boolean last = buttonIndex == buttonCount - 1;
+            button.setStyle(categoryButtonStyle(active, last));
+            buttonIndex++;
+        }
+    }
+
+    private String categoryButtonStyle(boolean active, boolean last) {
+        String rightBorder = last ? "0" : "1px";
+        String background = active ? "#fff5f0" : "transparent";
+        String textColor = active ? "#e64a19" : "#2c3e50";
+        String bottomBorder = active ? "#e64a19" : "#bdc3c7";
+        String bottomWidth = active ? "3px" : "0";
+
+        return "-fx-background-color:" + background + ";"
+            + "-fx-text-fill:" + textColor + ";"
+            + "-fx-font-size:15px;"
+            + "-fx-font-weight:bold;"
+            + "-fx-cursor:hand;"
+            + "-fx-padding:12px;"
+            + "-fx-border-color:transparent #bdc3c7 " + bottomBorder + " transparent;"
+            + "-fx-border-width:0 " + rightBorder + " " + bottomWidth + " 0;";
+    }
+
+    private void applyAutoReloadData(List<Product> freshData) {
+        if (freshData == null) {
+            return;
+        }
+
+        if (requiresGridRender(freshData)) {
+            currentDisplayedProducts = freshData;
+            loadProductsToGrid(currentDisplayedProducts);
+            return;
+        }
+
+        for (int i = 0; i < freshData.size(); i++) {
+            Product current = currentDisplayedProducts.get(i);
+            Product fresh = freshData.get(i);
+            copyProductState(current, fresh);
+            if (i < currentCardBindings.size()) {
+                refreshCardBinding(currentCardBindings.get(i));
+            }
+        }
+    }
+
+    private boolean requiresGridRender(List<Product> freshData) {
+        if (currentDisplayedProducts == null
+                || currentDisplayedProducts.size() != freshData.size()
+                || currentCardBindings.size() != freshData.size()) {
+            return true;
+        }
+
+        for (int i = 0; i < freshData.size(); i++) {
+            Product current = currentDisplayedProducts.get(i);
+            Product fresh = freshData.get(i);
+            if (!sameText(productIdentity(current), productIdentity(fresh))
+                    || !sameText(current.getName(), fresh.getName())
+                    || !sameText(current.getImagePath(), fresh.getImagePath())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private String productIdentity(Product product) {
+        if (product == null) {
+            return "";
+        }
+        if (product.getFirebaseKey() != null && !product.getFirebaseKey().isBlank()) {
+            return product.getFirebaseKey();
+        }
+        if (product.getId() != null && !product.getId().isBlank()) {
+            return product.getId();
+        }
+        return product.getName() != null ? product.getName() : "";
+    }
+
+    private boolean sameText(String left, String right) {
+        if (left == null) {
+            return right == null;
+        }
+        return left.equals(right);
+    }
+
+    private void copyProductState(Product target, Product source) {
+        target.setId(source.getId());
+        target.setFirebaseKey(source.getFirebaseKey());
+        target.setName(source.getName());
+        target.setDescription(source.getDescription());
+        target.setCurrentBid(source.getCurrentBid());
+        target.setTimeRemaining(source.getTimeRemaining());
+        target.setImagePath(source.getImagePath());
+        target.setSellerUsername(source.getSellerUsername());
+        target.setCategory(source.getCategory());
+        target.setStepPrice(source.getStepPrice());
+        target.setStatus(source.getStatus());
+        target.setEndTime(source.getEndTime());
+        target.setHighestBidder(source.getHighestBidder());
+        target.setHighestBidderPhone(source.getHighestBidderPhone());
+        target.setHighestBidderEmail(source.getHighestBidderEmail());
+    }
+
+    private void refreshCardBinding(ProductCardBinding binding) {
+        binding.priceLabel.setText(formatVND(binding.product.getCurrentBid()));
+        refreshTimeLabel(binding.timeLabel, binding.product);
+        refreshBadge(binding.badge, binding.product);
+
+        String buttonText = binding.product.isEnded() ? "Xem kết quả" : "Bid Now";
+        binding.bidButton.setText(buttonText);
+        binding.bidButton.setStyle(bidButtonStyle(binding.product, false));
+    }
+
     private void showLoadingState() {
         if (productContainer == null) {
             return;
@@ -211,6 +396,7 @@ public class ProductListController {
         if (globalCardTimer != null) {
             globalCardTimer.stop();
         }
+        currentCardBindings.clear();
         productContainer.getChildren().clear();
         productContainer.setAlignment(Pos.CENTER);
         Label loading = new Label("Đang tải dữ liệu...");
@@ -240,47 +426,38 @@ public class ProductListController {
             return;
         }
 
-        productContainer.setAlignment(Pos.TOP_LEFT);
-        List<Label> cardTimerLabels = new ArrayList<>();
-        List<Label> cardBadgeLabels = new ArrayList<>();
-        List<Product> cardProducts = new ArrayList<>();
-
+        productContainer.setAlignment(Pos.TOP_CENTER);
         for (Product product : products) {
-            VBox card = createProductCard(product, cardTimerLabels, cardBadgeLabels, cardProducts);
+            VBox card = createProductCard(product);
             productContainer.getChildren().add(card);
         }
 
         globalCardTimer = new Timeline(new KeyFrame(Duration.seconds(1), e -> {
-            for (int i = 0; i < cardProducts.size(); i++) {
-                Product p = cardProducts.get(i);
-                refreshTimeLabel(cardTimerLabels.get(i), p);
-                refreshBadge(cardBadgeLabels.get(i), p);
+            for (ProductCardBinding binding : currentCardBindings) {
+                refreshTimeLabel(binding.timeLabel, binding.product);
+                refreshBadge(binding.badge, binding.product);
             }
         }));
         globalCardTimer.setCycleCount(Animation.INDEFINITE);
         globalCardTimer.play();
     }
 
-    private VBox createProductCard(Product product, List<Label> timerLabels,
-                                   List<Label> badgeLabels, List<Product> cardProducts) {
+    private VBox createProductCard(Product product) {
         VBox card = new VBox(10);
-        String normalStyle = "-fx-background-color:white;-fx-padding:15px;-fx-background-radius:10px;"
-            + "-fx-effect:dropshadow(three-pass-box,rgba(0,0,0,0.1),5,0,0,2);";
-        String hoverStyle = "-fx-background-color:white;-fx-padding:15px;-fx-background-radius:10px;"
-            + "-fx-effect:dropshadow(three-pass-box,rgba(0,0,0,0.3),15,0,0,5);-fx-cursor:hand;";
-        card.setStyle(normalStyle);
+        card.setStyle(productCardStyle(false));
         card.setPrefWidth(220);
         card.setMinHeight(405);
         card.setPrefHeight(405);
         card.setAlignment(Pos.TOP_CENTER);
-        card.setOnMouseEntered(e -> card.setStyle(hoverStyle));
-        card.setOnMouseExited(e -> card.setStyle(normalStyle));
+        card.setFillWidth(true);
+        card.setOnMouseEntered(e -> card.setStyle(productCardStyle(true)));
+        card.setOnMouseExited(e -> card.setStyle(productCardStyle(false)));
 
         ImageView imgView = new ImageView();
         String imagePath = product.getImagePath();
         if (imagePath != null && !imagePath.trim().isEmpty()) {
             try {
-                imgView.setImage(new Image(imagePath, true));
+                imgView.setImage(loadProductImage(imagePath));
             } catch (Exception ex) {
                 System.out.println("Lỗi tải ảnh: " + product.getName());
             }
@@ -297,6 +474,7 @@ public class ProductListController {
         imgContainer.setMinSize(190, 130);
         imgContainer.setPrefSize(190, 130);
         imgContainer.setMaxSize(190, 130);
+        imgContainer.setAlignment(Pos.CENTER);
         Label badge = new Label();
         refreshBadge(badge, product);
         StackPane.setAlignment(badge, Pos.TOP_LEFT);
@@ -305,58 +483,89 @@ public class ProductListController {
 
         Label nameLabel = new Label(product.getName() != null ? product.getName() : "Sản phẩm ẩn danh");
         nameLabel.setWrapText(true);
+        nameLabel.setMinWidth(190);
+        nameLabel.setPrefWidth(190);
         nameLabel.setMaxWidth(190);
         nameLabel.setMinHeight(72);
         nameLabel.setPrefHeight(72);
         nameLabel.setMaxHeight(72);
-        nameLabel.setAlignment(Pos.TOP_LEFT);
+        nameLabel.setAlignment(Pos.CENTER);
+        nameLabel.setTextAlignment(TextAlignment.CENTER);
         nameLabel.setStyle("-fx-font-weight:bold;-fx-font-size:15px;-fx-text-fill:#2c3e50;");
 
         Label bidSub = new Label("Giá hiện tại");
+        bidSub.setMinWidth(190);
+        bidSub.setPrefWidth(190);
+        bidSub.setMaxWidth(190);
+        bidSub.setAlignment(Pos.CENTER);
+        bidSub.setTextAlignment(TextAlignment.CENTER);
         bidSub.setStyle("-fx-text-fill:#7f8c8d;-fx-font-size:11px;");
 
-        Label priceLabel = new Label(String.format("%,.0f VNĐ", product.getCurrentBid()));
+        Label priceLabel = new Label(formatVND(product.getCurrentBid()));
+        priceLabel.setMinWidth(190);
+        priceLabel.setPrefWidth(190);
         priceLabel.setMaxWidth(190);
+        priceLabel.setAlignment(Pos.CENTER);
+        priceLabel.setTextAlignment(TextAlignment.CENTER);
         priceLabel.setStyle("-fx-text-fill:#e74c3c;-fx-font-weight:bold;-fx-font-size:16px;");
 
         Label timeLabel = new Label();
         refreshTimeLabel(timeLabel, product);
+        timeLabel.setAlignment(Pos.CENTER);
+        timeLabel.setTextAlignment(TextAlignment.CENTER);
 
         VBox priceBox = new VBox(8);
         priceBox.setMinHeight(86);
         priceBox.setPrefHeight(86);
         priceBox.setMaxHeight(86);
+        priceBox.setMinWidth(190);
+        priceBox.setPrefWidth(190);
+        priceBox.setMaxWidth(190);
         priceBox.setAlignment(Pos.CENTER);
+        priceBox.setFillWidth(true);
         priceBox.getChildren().addAll(bidSub, priceLabel, timeLabel);
 
         Button btnBid = new Button(product.isEnded() ? "Xem kết quả" : "Bid Now");
-        btnBid.setStyle(product.isEnded()
-            ? "-fx-background-color:#7f8c8d;-fx-text-fill:white;-fx-font-weight:bold;-fx-cursor:hand;-fx-background-radius:5px;-fx-padding:8px 15px;"
-            : "-fx-background-color:#27ae60;-fx-text-fill:white;-fx-font-weight:bold;-fx-cursor:hand;-fx-background-radius:5px;-fx-padding:8px 15px;");
+        btnBid.setStyle(bidButtonStyle(product, false));
+        btnBid.setMinWidth(190);
+        btnBid.setPrefWidth(190);
         btnBid.setMaxWidth(Double.MAX_VALUE);
-        btnBid.setOnAction(ev -> openAuctionRoom(product, ev));
+        btnBid.setAlignment(Pos.CENTER);
+        btnBid.setTextAlignment(TextAlignment.CENTER);
+        btnBid.setOnMouseEntered(e -> btnBid.setStyle(bidButtonStyle(product, true)));
+        btnBid.setOnMouseExited(e -> btnBid.setStyle(bidButtonStyle(product, false)));
+        btnBid.setOnAction(event -> openAuctionRoom(product, event));
 
         Region spacer = new Region();
         VBox.setVgrow(spacer, Priority.ALWAYS);
 
         card.getChildren().addAll(imgContainer, nameLabel, priceBox, spacer, btnBid);
-        timerLabels.add(timeLabel);
-        badgeLabels.add(badge);
-        cardProducts.add(product);
+        currentCardBindings.add(new ProductCardBinding(product, priceLabel, timeLabel, badge, btnBid));
         return card;
     }
 
-    private void refreshTimeLabel(Label label, Product p) {
-        if (p.isEnded()) {
+    private Image loadProductImage(String imagePath) {
+        Image cachedImage = imageCache.get(imagePath);
+        if (cachedImage != null) {
+            return cachedImage;
+        }
+
+        Image image = new Image(imagePath, true);
+        imageCache.put(imagePath, image);
+        return image;
+    }
+
+    private void refreshTimeLabel(Label label, Product product) {
+        if (product.isEnded()) {
             label.setText("Đã kết thúc");
             label.setStyle("-fx-text-fill:#7f8c8d;-fx-font-weight:bold;"
                 + "-fx-background-color:#ecf0f1;-fx-padding:3px 8px;-fx-background-radius:5px;");
             return;
         }
 
-        int secs = p.getSecondsRemainingNow();
+        int secs = product.getSecondsRemainingNow();
         if (secs <= 0) {
-            p.setStatus("ended");
+            product.setStatus("ended");
             label.setText("Đã kết thúc");
             label.setStyle("-fx-text-fill:#7f8c8d;-fx-font-weight:bold;"
                 + "-fx-background-color:#ecf0f1;-fx-padding:3px 8px;-fx-background-radius:5px;");
@@ -374,12 +583,12 @@ public class ProductListController {
             + "-fx-background-color:" + bg + ";-fx-padding:3px 8px;-fx-background-radius:5px;");
     }
 
-    private void refreshBadge(Label badge, Product p) {
-        if (p.isEnded()) {
+    private void refreshBadge(Label badge, Product product) {
+        if (product.isEnded()) {
             badge.setText("ĐÃ KẾT THÚC");
             badge.setStyle("-fx-background-color:#7f8c8d;-fx-text-fill:white;"
                 + "-fx-font-weight:bold;-fx-font-size:10px;-fx-padding:4px 8px;-fx-background-radius:5px;");
-        } else if (p.getSecondsRemainingNow() <= 60) {
+        } else if (product.getSecondsRemainingNow() <= 60) {
             badge.setText("SẮP KẾT THÚC");
             badge.setStyle("-fx-background-color:#e74c3c;-fx-text-fill:white;"
                 + "-fx-font-weight:bold;-fx-font-size:10px;-fx-padding:4px 8px;-fx-background-radius:5px;");
@@ -388,6 +597,37 @@ public class ProductListController {
             badge.setStyle("-fx-background-color:#27ae60;-fx-text-fill:white;"
                 + "-fx-font-weight:bold;-fx-font-size:10px;-fx-padding:4px 8px;-fx-background-radius:5px;");
         }
+    }
+
+    private String productCardStyle(boolean hover) {
+        String shadow = hover
+            ? "dropshadow(three-pass-box,rgba(0,0,0,0.3),15,0,0,5)"
+            : "dropshadow(three-pass-box,rgba(0,0,0,0.1),5,0,0,2)";
+        return "-fx-background-color:white;"
+            + "-fx-padding:15px;"
+            + "-fx-background-radius:10px;"
+            + "-fx-border-color:transparent;"
+            + "-fx-effect:" + shadow + ";"
+            + (hover ? "-fx-cursor:hand;" : "");
+    }
+
+    private String bidButtonStyle(Product product, boolean hover) {
+        boolean ended = product != null && product.isEnded();
+        String color = ended
+            ? (hover ? "#95a5a6" : "#7f8c8d")
+            : (hover ? "#2ecc71" : "#27ae60");
+
+        return "-fx-background-color:" + color + ";"
+            + "-fx-text-fill:white;"
+            + "-fx-font-weight:bold;"
+            + "-fx-cursor:hand;"
+            + "-fx-background-radius:5px;"
+            + "-fx-border-color:transparent;"
+            + "-fx-padding:8px 15px;";
+    }
+
+    private String formatVND(double amount) {
+        return NumberFormat.getNumberInstance(new Locale("vi", "VN")).format(amount) + " VNĐ";
     }
 
     private void openAuctionRoom(Product product, ActionEvent event) {
@@ -408,14 +648,14 @@ public class ProductListController {
         }
     }
 
-    private void applySmoothHover(Button btn) {
-        ScaleTransition transition = new ScaleTransition(Duration.millis(150), btn);
-        btn.setOnMouseEntered(e -> {
+    private void applySmoothHover(Button button) {
+        ScaleTransition transition = new ScaleTransition(Duration.millis(150), button);
+        button.setOnMouseEntered(e -> {
             transition.setToX(1.1);
             transition.setToY(1.1);
             transition.playFromStart();
         });
-        btn.setOnMouseExited(e -> {
+        button.setOnMouseExited(e -> {
             transition.setToX(1.0);
             transition.setToY(1.0);
             transition.playFromStart();
@@ -428,8 +668,9 @@ public class ProductListController {
             globalCardTimer.stop();
         }
         try {
-            AuthService.currentUserEmail = null;
+            AuthService.logout();
             FirebaseService.currentUserEmail = null;
+            FirebaseService.registeredUsername = null;
 
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/client/view/Login.fxml"));
             Parent root = loader.load();
@@ -443,8 +684,10 @@ public class ProductListController {
 
     @FXML
     private void handleShowInfo(ActionEvent event) {
-        if (AuthService.currentUserEmail != null) {
-            btnInfo.setText("Email: " + AuthService.currentUserEmail);
+        String user = currentUserEmail();
+        if (user != null) {
+            String phone = FirebaseService.getUserPhone(user);
+            btnInfo.setText("Email: " + user + "\nSĐT: " + phone);
             btnInfo.setStyle("-fx-background-color:transparent;-fx-text-fill:#27ae60;"
                 + "-fx-font-weight:bold;-fx-cursor:default;");
         } else {
@@ -466,5 +709,31 @@ public class ProductListController {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    @FXML
+    private void handleGoToUserProducts(ActionEvent event) {
+        if (globalCardTimer != null) {
+            globalCardTimer.stop();
+        }
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/client/view/UserProducts.fxml"));
+            Parent root = loader.load();
+            Stage stage = (Stage) productContainer.getScene().getWindow();
+            stage.getScene().setRoot(root);
+            stage.setTitle("Online Auction System - Quản lý sản phẩm của tôi");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private String currentUserEmail() {
+        if (AuthService.currentUserEmail != null && !AuthService.currentUserEmail.isBlank()) {
+            return AuthService.currentUserEmail;
+        }
+        if (FirebaseService.currentUserEmail != null && !FirebaseService.currentUserEmail.isBlank()) {
+            return FirebaseService.currentUserEmail;
+        }
+        return FirebaseService.registeredUsername;
     }
 }

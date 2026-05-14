@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.control.cell.PropertyValueFactory?>
+<?import javafx.scene.layout.*?>
+
+<VBox spacing="20" style="-fx-padding: 30;" xmlns:fx="http://javafx.com/fxml/1" fx:controller="client.controller.ManageProductsController">
+    
+    <Label text="🔨 KIỂM DUYỆT SẢN PHẨM" styleClass="admin-page-title"/>
+    
+    <TableView fx:id="tableProducts" VBox.vgrow="ALWAYS" styleClass="admin-table">
+        <columns>
+            <TableColumn fx:id="colName" text="Tên Sản Phẩm" prefWidth="250">
+                <cellValueFactory><PropertyValueFactory property="name"/></cellValueFactory>
+            </TableColumn>
+            
+            <TableColumn fx:id="colSeller" text="Người Bán" prefWidth="180">
+                <cellValueFactory><PropertyValueFactory property="sellerUsername"/></cellValueFactory>
+            </TableColumn>
+            
+            <TableColumn fx:id="colPrice" text="Giá Hiện Tại" prefWidth="150">
+                <cellValueFactory><PropertyValueFactory property="currentBid"/></cellValueFactory>
+            </TableColumn>
+
+            <TableColumn fx:id="colStatus" text="Trạng Thái" prefWidth="100">
+                <cellValueFactory><PropertyValueFactory property="status"/></cellValueFactory>
+            </TableColumn>
+
+            <TableColumn fx:id="colAction" text="Thao Tác (Admin)" prefWidth="220" />
+        </columns>
+    </TableView>
+</VBox>

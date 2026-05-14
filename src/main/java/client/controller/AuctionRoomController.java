@@ -153,10 +153,7 @@ public class AuctionRoomController {
             }
         };
 
-        task.setOnSucceeded(e -> {
-            List<FirebaseService.BidHistoryEntry> history = task.getValue();
-            appendNewBidHistoryEntries(history);
-        });
+        task.setOnSucceeded(e -> appendNewBidHistoryEntries(task.getValue()));
 
         Thread thread = new Thread(task);
         thread.setDaemon(true);
@@ -594,7 +591,7 @@ public class AuctionRoomController {
     }
 
     private String formatVND(double amount) {
-        return NumberFormat.getCurrencyInstance(new Locale("vi", "VN")).format(amount);
+        return NumberFormat.getNumberInstance(new Locale("vi", "VN")).format(amount) + " VNĐ";
     }
 
     private String nvl(String value, String fallback) {

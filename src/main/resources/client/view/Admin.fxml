@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.geometry.Insets?>
+
+<BorderPane fx:id="adminRoot" stylesheets="@../css/style.css" xmlns:fx="http://javafx.com/fxml/1" fx:controller="client.controller.AdminController" styleClass="admin-root">
+    
+    <left>
+        <VBox spacing="15" styleClass="admin-sidebar" prefWidth="240" style="-fx-padding: 40 20 40 20;">
+            
+            <VBox alignment="CENTER" spacing="5">
+                <Label text="⚡ ADMIN PANEL" styleClass="admin-brand-title"/>
+                <Label text="Online Auction System" styleClass="admin-brand-subtitle"/>
+            </VBox>
+            
+            <Separator style="-fx-opacity: 0.1; -fx-padding: 10 0 20 0;"/>
+            
+            <Button fx:id="btnDashboard" text="📊 Bảng Điều Khiển" maxWidth="Infinity" styleClass="sidebar-button" onAction="#showDashboard"/>
+            <Button fx:id="btnManageUsers" text="👥 Quản Lý Người Dùng" maxWidth="Infinity" styleClass="sidebar-button" onAction="#showUserManagement"/>
+            <Button fx:id="btnManageProducts" text="🔨 Kiểm Duyệt Sản Phẩm" maxWidth="Infinity" styleClass="sidebar-button" onAction="#showProductManagement"/>
+            
+            <Region VBox.vgrow="ALWAYS" /> 
+            
+            <Button text="🚪 Đăng Xuất" maxWidth="Infinity" styleClass="danger-action-button" onAction="#handleLogout"/>
+        </VBox>
+    </left>
+
+    <center>
+        <StackPane fx:id="contentArea" style="-fx-padding: 40;">
+            <VBox spacing="30">
+                <Label text="👋 Chào mừng trở lại, Admin!" styleClass="admin-page-title"/>
+                
+                <HBox spacing="30">
+                    <VBox styleClass="stat-card" prefWidth="300">
+                        <HBox alignment="CENTER_LEFT" spacing="15">
+                            <Label text="👥" style="-fx-font-size: 40;"/>
+                            <VBox>
+                                <Label text="Tổng Người Dùng" styleClass="admin-stat-label"/>
+                                <Label fx:id="lblTotalUsers" text="Loading..." styleClass="admin-stat-number"/>
+                            </VBox>
+                        </HBox>
+                    </VBox>
+
+                    <VBox styleClass="stat-card" prefWidth="300">
+                        <HBox alignment="CENTER_LEFT" spacing="15">
+                            <Label text="🔥" style="-fx-font-size: 40;"/>
+                            <VBox>
+                                <Label text="Phiên Đang Mở" styleClass="admin-stat-label"/>
+                                <Label fx:id="lblActiveAuctions" text="Loading..." styleClass="admin-stat-number"/>
+                            </VBox>
+                        </HBox>
+                    </VBox>
+                </HBox>
+
+                <VBox styleClass="stat-card" VBox.vgrow="ALWAYS" alignment="CENTER" spacing="15">
+                    <Label text="📊 Phân Bổ Danh Mục Sản Phẩm" styleClass="admin-chart-title"/>
+                    
+                    <javafx.scene.chart.PieChart fx:id="categoryChart" legendSide="BOTTOM" VBox.vgrow="ALWAYS"/>
+                </VBox>
+
+            </VBox>
+        </StackPane>
+    </center>
+</BorderPane>

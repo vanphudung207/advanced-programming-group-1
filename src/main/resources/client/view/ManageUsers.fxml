@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.control.cell.PropertyValueFactory?>
+<?import javafx.scene.layout.*?>
+
+<VBox spacing="20" style="-fx-padding: 30;" xmlns:fx="http://javafx.com/fxml/1" fx:controller="client.controller.ManageUsersController">
+    
+    <Label text="👥 DANH SÁCH NGƯỜI DÙNG" styleClass="admin-page-title"/>
+    
+    <TableView fx:id="tableUsers" VBox.vgrow="ALWAYS" styleClass="admin-table">
+        <columns>
+            <TableColumn text="Email Tài Khoản" prefWidth="350">
+                <cellValueFactory><PropertyValueFactory property="email"/></cellValueFactory>
+            </TableColumn>
+            
+            <TableColumn text="Quyền Hạn" prefWidth="150">
+                <cellValueFactory><PropertyValueFactory property="role"/></cellValueFactory>
+            </TableColumn>
+            
+            <TableColumn text="Trạng Thái" prefWidth="150">
+                <cellValueFactory><PropertyValueFactory property="status"/></cellValueFactory>
+            </TableColumn>
+
+            <TableColumn fx:id="colAction" text="Thao Tác" prefWidth="150" />
+        </columns>
+    </TableView>
+    
+</VBox>
