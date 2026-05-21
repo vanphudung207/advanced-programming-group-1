@@ -8,6 +8,7 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.MenuButton?>
 <?import javafx.scene.control.MenuItem?>
@@ -30,6 +31,12 @@
                   <Label style="-fx-text-fill: white; -fx-font-size: 13px;" text="Hà Nội, Việt Nam" />
                   <Label fx:id="lblDateTime" style="-fx-text-fill: white; -fx-font-size: 13px; -fx-font-weight: bold;" text="Đang tải thời gian..." />
                   <Region HBox.hgrow="ALWAYS" />
+                  <StackPane styleClass="notification-bell-wrap">
+                     <children>
+                        <Button fx:id="btnNotificationBell" mnemonicParsing="false" onAction="#handleShowNotifications" styleClass="notification-bell-button" text="🔔" />
+                        <Label fx:id="lblNotificationBadge" text="0" visible="false" styleClass="notification-badge" StackPane.alignment="TOP_RIGHT" />
+                     </children>
+                  </StackPane>
                   <Button mnemonicParsing="false" onAction="#handleGoToAddProduct" style="-fx-background-color: white; -fx-text-fill: #e64a19; -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 5px 15px; -fx-background-radius: 5px;" text="➕ Đăng sản phẩm" />
                   <MenuButton mnemonicParsing="false" style="-fx-background-color: transparent; -fx-border-color: white; -fx-border-radius: 5px; -fx-text-fill: white; -fx-cursor: hand;" text="Tài khoản">
                      <items>

@@ -24,10 +24,13 @@ import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.TimeZone;
 import java.util.UUID;
 
@@ -86,6 +89,40 @@ public class FirebaseService {
         public String getLine() {
             return line;
         }
+    }
+
+    public static class WinnerNotification {
+        private final String productKey;
+        private final String productName;
+        private final String winner;
+        private final String winnerPhone;
+        private final String winnerEmail;
+        private final double finalPrice;
+        private final long endedAt;
+        private final boolean seen;
+
+        public WinnerNotification(String productKey, String productName,
+                                  String winner, String winnerPhone,
+                                  String winnerEmail, double finalPrice,
+                                  long endedAt, boolean seen) {
+            this.productKey = productKey;
+            this.productName = productName;
+            this.winner = winner;
+            this.winnerPhone = winnerPhone;
+            this.winnerEmail = winnerEmail;
+            this.finalPrice = finalPrice;
+            this.endedAt = endedAt;
+            this.seen = seen;
+        }
+
+        public String getProductKey() { return productKey; }
+        public String getProductName() { return productName; }
+        public String getWinner() { return winner; }
+        public String getWinnerPhone() { return winnerPhone; }
+        public String getWinnerEmail() { return winnerEmail; }
+        public double getFinalPrice() { return finalPrice; }
+        public long getEndedAt() { return endedAt; }
+        public boolean isSeen() { return seen; }
     }
 
     public static String getAuction(String id) throws Exception {
@@ -306,6 +343,106 @@ public class FirebaseService {
             }
         }
         return result;
+    }
+
+    public static List<WinnerNotification> getWinnerNotificationsForSeller(String sellerUsername) {
+        List<WinnerNotification> notifications = new ArrayList<>();
+        if (sellerUsername == null || sellerUsername.isBlank()) {
+            return notifications;
+        }
+
+        Set<String> seenKeys = getSeenWinnerNotificationKeys(sellerUsername);
+        for (Product product : getProductsBySeller(sellerUsername)) {
+            if (!isWinnerNotificationProduct(product)) {
+                continue;
+            }
+
+            String productKey = notificationProductKey(product);
+            notifications.add(new WinnerNotification(
+                productKey,
+                product.getName(),
+                product.getHighestBidder(),
+                product.getHighestBidderPhone(),
+                product.getHighestBidderEmail(),
+                product.getCurrentBid(),
+                product.getEndTime(),
+                seenKeys.contains(productKey)
+            ));
+        }
+
+        notifications.sort(Comparator.comparingLong(WinnerNotification::getEndedAt).reversed());
+        return notifications;
+    }
+
+    public static void markWinnerNotificationsSeen(String sellerUsername, List<String> productKeys) {
+        if (sellerUsername == null || sellerUsername.isBlank()
+                || productKeys == null || productKeys.isEmpty()) {
+            return;
+        }
+
+        try {
+            StringBuilder json = new StringBuilder("{");
+            for (String productKey : productKeys) {
+                if (productKey == null || productKey.isBlank()) {
+                    continue;
+                }
+                appendCommaIfNeeded(json);
+                json.append("\"").append(escape(productKey)).append("\":true");
+            }
+            json.append("}");
+
+            if (json.length() > 2) {
+                request("PATCH",
+                    "/users/" + userKey(sellerUsername) + "/seenWinnerNotifications.json",
+                    json.toString());
+            }
+        } catch (Exception e) {
+            lastError = e.getMessage();
+            e.printStackTrace();
+        }
+    }
+
+    private static Set<String> getSeenWinnerNotificationKeys(String sellerUsername) {
+        Set<String> seenKeys = new HashSet<>();
+        try {
+            String json = request("GET",
+                "/users/" + userKey(sellerUsername) + "/seenWinnerNotifications.json",
+                null);
+            if (json == null || json.equals("null") || json.isBlank()) {
+                return seenKeys;
+            }
+
+            JsonObject object = JsonParser.parseString(json).getAsJsonObject();
+            for (Map.Entry<String, JsonElement> entry : object.entrySet()) {
+                try {
+                    if (entry.getValue().getAsBoolean()) {
+                        seenKeys.add(entry.getKey());
+                    }
+                } catch (Exception ignored) {
+                    seenKeys.add(entry.getKey());
+                }
+            }
+        } catch (Exception e) {
+            lastError = e.getMessage();
+        }
+        return seenKeys;
+    }
+
+    private static boolean isWinnerNotificationProduct(Product product) {
+        return product != null
+            && product.isEnded()
+            && product.getHighestBidder() != null
+            && !product.getHighestBidder().isBlank();
+    }
+
+    private static String notificationProductKey(Product product) {
+        if (product.getFirebaseKey() != null && !product.getFirebaseKey().isBlank()) {
+            return product.getFirebaseKey();
+        }
+        if (product.getId() != null && !product.getId().isBlank()) {
+            return product.getId();
+        }
+        return product.getName() != null ? product.getName() : "";
     }
 
     public static boolean updateProductIfOwner(String key, Product updatedProduct, String currentUser) {
@@ -635,6 +772,9 @@ public class FirebaseService {
         product.setHighestBidder(stringValue(object, "highestBidder", ""));
         product.setHighestBidderPhone(stringValue(object, "highestBidderPhone", ""));
         product.setHighestBidderEmail(stringValue(object, "highestBidderEmail", ""));
+        if (product.isEnded()) {
+            product.setStatus("ended");
+        }
         return product;
     }
 

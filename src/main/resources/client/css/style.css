@@ -56,6 +56,45 @@
     -fx-text-fill: white;
 }
 
+.notification-bell-wrap {
+    -fx-padding: 0 4px 0 0;
+}
+
+.notification-bell-button {
+    -fx-background-color: rgba(255,255,255,0.12);
+    -fx-border-color: rgba(255,255,255,0.65);
+    -fx-border-radius: 18px;
+    -fx-background-radius: 18px;
+    -fx-min-width: 36px;
+    -fx-pref-width: 36px;
+    -fx-min-height: 36px;
+    -fx-pref-height: 36px;
+    -fx-padding: 0;
+    -fx-text-fill: white;
+    -fx-font-size: 17px;
+    -fx-cursor: hand;
+}
+
+.notification-bell-button:hover {
+    -fx-background-color: rgba(255,255,255,0.24);
+    -fx-border-color: white;
+}
+
+.notification-badge {
+    -fx-background-color: #ef233c;
+    -fx-text-fill: white;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-alignment: center;
+    -fx-min-width: 18px;
+    -fx-min-height: 18px;
+    -fx-padding: 1px 5px;
+    -fx-background-radius: 10px;
+    -fx-translate-x: 9px;
+    -fx-translate-y: -8px;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.24), 4, 0, 0, 1);
+}
+
 /* =======================================================
    THEME CHO ADMIN DASHBOARD
    ======================================================= */

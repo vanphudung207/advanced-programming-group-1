@@ -39,7 +39,7 @@ public class ManageProductsController {
         // Gắn Tooltip chờ 2 giây cho các cột chữ
         addTooltipToTextColumn(colName);
         addTooltipToTextColumn(colSeller);
-        addTooltipToTextColumn(colStatus);
+        setupStatusColumn();
         
         // Gắn Tooltip và Format tiền tệ cho cột Giá
         setupPriceColumn();
@@ -106,6 +106,29 @@ public class ManageProductsController {
         });
     }
 
+    private void setupStatusColumn() {
+        colStatus.setCellFactory(tc -> new TableCell<>() {
+            @Override
+            protected void updateItem(String status, boolean empty) {
+                super.updateItem(status, empty);
+                if (empty) {
+                    setText(null);
+                    setTooltip(null);
+                    return;
+                }
+
+                Product product = getTableRow() != null ? getTableRow().getItem() : null;
+                String displayStatus = product != null && product.isEnded() ? "ended" : "active";
+                setText(displayStatus);
+
+                Tooltip tooltip = new Tooltip(displayStatus);
+                tooltip.setShowDelay(Duration.seconds(2));
+                tooltip.setStyle("-fx-font-size: 14px; -fx-background-color: #334155;");
+                setTooltip(tooltip);
+            }
+        });
+    }
+
     // ==============================================================
     // CỘT NÚT BẤM THAO TÁC
     // ==============================================================
@@ -124,6 +147,11 @@ public class ManageProductsController {
 
                         btnStop.setOnAction((ActionEvent event) -> {
                             Product data = getTableView().getItems().get(getIndex());
+                            if (data.isEnded()) {
+                                data.setStatus("ended");
+                                tableProducts.refresh();
+                                return;
+                            }
                             FirebaseService.markAuctionEnded(data.getFirebaseKey());
                             data.setStatus("ended");
                             tableProducts.refresh();
@@ -143,7 +171,12 @@ public class ManageProductsController {
                             setGraphic(null);
                         } else {
                             Product data = getTableView().getItems().get(getIndex());
-                            btnStop.setDisable("ended".equals(data.getStatus()));
+                            boolean ended = data.isEnded();
+                            if (ended) {
+                                data.setStatus("ended");
+                            }
+                            btnStop.setDisable(ended);
+                            btnStop.setText(ended ? "Đã dừng" : "Dừng");
                             setGraphic(pane);
                         }
                     }

@@ -15,10 +15,13 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
+import javafx.scene.control.Tooltip;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.FlowPane;
@@ -29,6 +32,7 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.TextAlignment;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
@@ -51,13 +55,18 @@ public class ProductListController {
     @FXML private Button btnSearch;
     @FXML private TextField txtSearch;
     @FXML private ComboBox<String> cbSort;
+    @FXML private Button btnNotificationBell;
+    @FXML private Label lblNotificationBadge;
 
     private List<Product> currentDisplayedProducts = new ArrayList<>();
     private Timeline globalCardTimer;
+    private Timeline notificationTimer;
+    private boolean notificationLoadInFlight = false;
     private String selectedCategory = null;
     private String allProductsCategory = null;
     private final List<ProductCardBinding> currentCardBindings = new ArrayList<>();
     private final Map<String, Image> imageCache = new HashMap<>();
+    private final List<FirebaseService.WinnerNotification> winnerNotifications = new ArrayList<>();
 
     private static class ProductCardBinding {
         private final Product product;
@@ -98,6 +107,7 @@ public class ProductListController {
 
         fetchDataAsync();
         startAutoReload();
+        startNotificationPolling();
 
         if (categoryBox != null) {
             for (Node node : categoryBox.getChildren()) {
@@ -139,6 +149,214 @@ public class ProductListController {
         });
         reloadThread.setDaemon(true);
         reloadThread.start();
+    }
+
+    private void startNotificationPolling() {
+        if (btnNotificationBell != null) {
+            btnNotificationBell.setTooltip(new Tooltip("Thông báo kết quả đấu giá"));
+        }
+
+        refreshWinnerNotificationsAsync();
+        if (notificationTimer != null) {
+            notificationTimer.stop();
+        }
+        notificationTimer = new Timeline(
+            new KeyFrame(Duration.seconds(30), e -> refreshWinnerNotificationsAsync())
+        );
+        notificationTimer.setCycleCount(Animation.INDEFINITE);
+        notificationTimer.play();
+    }
+
+    private void refreshWinnerNotificationsAsync() {
+        String user = currentUserEmail();
+        if (user == null || user.isBlank() || notificationLoadInFlight) {
+            updateNotificationBadge();
+            return;
+        }
+
+        notificationLoadInFlight = true;
+        Thread thread = new Thread(() -> {
+            List<FirebaseService.WinnerNotification> data = new ArrayList<>();
+            try {
+                data = FirebaseService.getWinnerNotificationsForSeller(user);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            List<FirebaseService.WinnerNotification> finalData = data;
+            Platform.runLater(() -> {
+                notificationLoadInFlight = false;
+                winnerNotifications.clear();
+                winnerNotifications.addAll(finalData);
+                updateNotificationBadge();
+            });
+        });
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    private void updateNotificationBadge() {
+        if (lblNotificationBadge == null) {
+            return;
+        }
+
+        long unreadCount = winnerNotifications.stream()
+            .filter(notification -> !notification.isSeen())
+            .count();
+        boolean hasUnread = unreadCount > 0;
+        lblNotificationBadge.setVisible(hasUnread);
+        lblNotificationBadge.setText(unreadCount > 99 ? "99+" : String.valueOf(unreadCount));
+
+        if (btnNotificationBell != null) {
+            String tooltip = hasUnread
+                ? unreadCount + " thông báo kết quả đấu giá mới"
+                : "Thông báo kết quả đấu giá";
+            btnNotificationBell.setTooltip(new Tooltip(tooltip));
+        }
+    }
+
+    @FXML
+    private void handleShowNotifications(ActionEvent event) {
+        showNotificationsDialog();
+        markUnreadNotificationsSeen();
+    }
+
+    private void showNotificationsDialog() {
+        Stage dialog = new Stage();
+        dialog.initModality(Modality.APPLICATION_MODAL);
+        if (btnNotificationBell != null && btnNotificationBell.getScene() != null) {
+            dialog.initOwner(btnNotificationBell.getScene().getWindow());
+        }
+        dialog.setTitle("Thông báo đấu giá");
+
+        VBox root = new VBox(14);
+        root.setPadding(new Insets(22));
+        root.setStyle("-fx-background-color:#f8fafc;");
+
+        Label title = new Label("Thông báo kết quả đấu giá");
+        title.setStyle("-fx-font-size:22px;-fx-font-weight:bold;-fx-text-fill:#1f2937;");
+
+        Label subtitle = new Label("Các phiên đã kết thúc có người thắng thuộc sản phẩm bạn đăng.");
+        subtitle.setWrapText(true);
+        subtitle.setStyle("-fx-font-size:13px;-fx-text-fill:#64748b;");
+
+        VBox notificationList = new VBox(10);
+        if (winnerNotifications.isEmpty()) {
+            Label empty = new Label("Chưa có thông báo người thắng đấu giá.");
+            empty.setStyle("-fx-text-fill:#64748b;-fx-font-size:15px;-fx-padding:30px;");
+            empty.setAlignment(Pos.CENTER);
+            empty.setMaxWidth(Double.MAX_VALUE);
+            notificationList.getChildren().add(empty);
+        } else {
+            for (FirebaseService.WinnerNotification notification : winnerNotifications) {
+                notificationList.getChildren().add(createNotificationCard(notification));
+            }
+        }
+
+        ScrollPane scrollPane = new ScrollPane(notificationList);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setPrefViewportHeight(340);
+        scrollPane.setStyle("-fx-background-color:transparent;-fx-border-color:transparent;");
+
+        Button closeButton = new Button("Đóng");
+        closeButton.setStyle("-fx-background-color:#1f2937;-fx-text-fill:white;-fx-font-weight:bold;"
+            + "-fx-padding:8px 22px;-fx-background-radius:6px;-fx-cursor:hand;");
+        closeButton.setOnAction(e -> dialog.close());
+
+        HBox footer = new HBox(closeButton);
+        footer.setAlignment(Pos.CENTER_RIGHT);
+
+        root.getChildren().addAll(title, subtitle, scrollPane, footer);
+
+        Scene scene = new Scene(root, 560, 500);
+        dialog.setScene(scene);
+        dialog.centerOnScreen();
+        dialog.showAndWait();
+    }
+
+    private VBox createNotificationCard(FirebaseService.WinnerNotification notification) {
+        boolean unread = !notification.isSeen();
+        VBox card = new VBox(7);
+        String background = unread ? "#fff7ed" : "#ffffff";
+        String border = unread ? "#fb923c" : "#e2e8f0";
+        card.setStyle("-fx-background-color:" + background + ";"
+            + "-fx-padding:14px;"
+            + "-fx-background-radius:8px;"
+            + "-fx-border-color:" + border + ";"
+            + "-fx-border-radius:8px;"
+            + "-fx-effect:dropshadow(three-pass-box,rgba(15,23,42,0.06),8,0,0,2);");
+
+        Label productName = new Label(nvl(notification.getProductName(), "Sản phẩm"));
+        productName.setWrapText(true);
+        productName.setStyle("-fx-font-size:16px;-fx-font-weight:bold;-fx-text-fill:#111827;");
+
+        HBox titleRow = new HBox(10);
+        titleRow.setAlignment(Pos.CENTER_LEFT);
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+        titleRow.getChildren().addAll(productName, spacer);
+        if (unread) {
+            Label newBadge = new Label("Mới");
+            newBadge.setStyle("-fx-background-color:#ef4444;-fx-text-fill:white;-fx-font-weight:bold;"
+                + "-fx-font-size:11px;-fx-padding:2px 8px;-fx-background-radius:10px;");
+            titleRow.getChildren().add(newBadge);
+        }
+
+        Label winner = new Label("Người thắng: " + nvl(notification.getWinner(), "Chưa có"));
+        winner.setStyle("-fx-font-size:14px;-fx-font-weight:bold;-fx-text-fill:#166534;");
+
+        Label price = new Label("Giá chốt: " + formatVND(notification.getFinalPrice()));
+        price.setStyle("-fx-font-size:14px;-fx-font-weight:bold;-fx-text-fill:#e64a19;");
+
+        Label contact = new Label("Liên hệ: "
+            + nvl(notification.getWinnerPhone(), "Chưa cập nhật")
+            + " | " + nvl(notification.getWinnerEmail(), "Chưa cập nhật"));
+        contact.setWrapText(true);
+        contact.setStyle("-fx-font-size:13px;-fx-text-fill:#334155;");
+
+        Label endedAt = new Label("Kết thúc: " + FirebaseService.formatTimestamp(notification.getEndedAt()));
+        endedAt.setStyle("-fx-font-size:12px;-fx-text-fill:#64748b;");
+
+        card.getChildren().addAll(titleRow, winner, price, contact, endedAt);
+        return card;
+    }
+
+    private void markUnreadNotificationsSeen() {
+        String user = currentUserEmail();
+        if (user == null || user.isBlank()) {
+            return;
+        }
+
+        List<String> unreadKeys = new ArrayList<>();
+        for (FirebaseService.WinnerNotification notification : winnerNotifications) {
+            if (!notification.isSeen()
+                    && notification.getProductKey() != null
+                    && !notification.getProductKey().isBlank()) {
+                unreadKeys.add(notification.getProductKey());
+            }
+        }
+
+        if (unreadKeys.isEmpty()) {
+            return;
+        }
+
+        if (lblNotificationBadge != null) {
+            lblNotificationBadge.setVisible(false);
+        }
+
+        Thread thread = new Thread(() -> {
+            FirebaseService.markWinnerNotificationsSeen(user, unreadKeys);
+            Platform.runLater(this::refreshWinnerNotificationsAsync);
+        });
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    private void stopNotificationPolling() {
+        if (notificationTimer != null) {
+            notificationTimer.stop();
+            notificationTimer = null;
+        }
     }
 
     private void fetchDataAsync() {
@@ -634,6 +852,7 @@ public class ProductListController {
         if (globalCardTimer != null) {
             globalCardTimer.stop();
         }
+        stopNotificationPolling();
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/client/view/AuctionRoom.fxml"));
             Parent root = loader.load();
@@ -667,6 +886,7 @@ public class ProductListController {
         if (globalCardTimer != null) {
             globalCardTimer.stop();
         }
+        stopNotificationPolling();
         try {
             AuthService.logout();
             FirebaseService.currentUserEmail = null;
@@ -700,6 +920,7 @@ public class ProductListController {
         if (globalCardTimer != null) {
             globalCardTimer.stop();
         }
+        stopNotificationPolling();
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/client/view/AddProduct.fxml"));
             Parent root = loader.load();
@@ -716,6 +937,7 @@ public class ProductListController {
         if (globalCardTimer != null) {
             globalCardTimer.stop();
         }
+        stopNotificationPolling();
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/client/view/UserProducts.fxml"));
             Parent root = loader.load();
@@ -725,6 +947,10 @@ public class ProductListController {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private String nvl(String value, String fallback) {
+        return value != null && !value.isBlank() ? value : fallback;
     }
 
     private String currentUserEmail() {

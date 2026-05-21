@@ -59,7 +59,7 @@ public class AdminController {
             
             // Đếm số phiên đang mở
             long activeCount = allProducts.stream()
-                                          .filter(p -> "active".equals(p.getStatus()))
+                                          .filter(p -> !p.isEnded())
                                           .count();
 
             // Tính toán dữ liệu cho Biểu đồ (Nhóm theo Danh mục và Đếm)

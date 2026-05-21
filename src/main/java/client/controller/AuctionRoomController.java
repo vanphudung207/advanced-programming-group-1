@@ -10,6 +10,7 @@ import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Parent;
@@ -17,10 +18,12 @@ import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.stage.Modality;
@@ -527,9 +530,10 @@ public class AuctionRoomController {
         dialog.initModality(Modality.APPLICATION_MODAL);
         dialog.setTitle("Thông tin chi tiết sản phẩm");
 
-        VBox layout = new VBox(15);
-        layout.setStyle("-fx-padding:25;-fx-background-color:#ffffff;");
-        layout.setAlignment(Pos.TOP_LEFT);
+        VBox content = new VBox(15);
+        content.setStyle("-fx-padding:25 25 10 25;-fx-background-color:#ffffff;");
+        content.setAlignment(Pos.TOP_LEFT);
+        content.setFillWidth(true);
 
         String pName = nvl(currentProduct.getName(), "Không có");
         String pSeller = nvl(currentProduct.getSellerUsername(), "Không có");
@@ -539,7 +543,10 @@ public class AuctionRoomController {
             pDesc = "Người bán chưa cung cấp mô tả.";
         }
 
-        layout.getChildren().addAll(
+        Label description = lbl(pDesc, "-fx-font-size:14px;-fx-text-fill:#34495e;");
+        description.setMaxWidth(Double.MAX_VALUE);
+
+        content.getChildren().addAll(
             lbl("CHI TIẾT SẢN PHẨM", "-fx-font-size:20px;-fx-font-weight:bold;-fx-text-fill:#2c3e50;"),
             lbl("Tên sản phẩm: " + pName, "-fx-font-size:16px;-fx-font-weight:bold;-fx-text-fill:#2c3e50;"),
             lbl("Danh mục: " + pCategory, "-fx-font-size:15px;-fx-text-fill:#8e44ad;"),
@@ -551,16 +558,33 @@ public class AuctionRoomController {
             lbl(nvl(currentProduct.getTimeRemaining(), "Không có"),
                 "-fx-font-size:14px;-fx-text-fill:#7f8c8d;"),
             lbl("Mô tả chi tiết:", "-fx-font-size:15px;-fx-font-weight:bold;-fx-text-fill:#2c3e50;"),
-            lbl(pDesc, "-fx-font-size:14px;-fx-text-fill:#34495e;")
+            description
         );
+
+        ScrollPane scrollPane = new ScrollPane(content);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setPannable(true);
+        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        scrollPane.setStyle("-fx-background:#ffffff;-fx-background-color:#ffffff;-fx-border-color:transparent;");
 
         Button btnClose = new Button("ĐÓNG");
         btnClose.setStyle("-fx-background-color:#e74c3c;-fx-text-fill:white;"
             + "-fx-font-weight:bold;-fx-padding:8 20;-fx-cursor:hand;");
         btnClose.setOnAction(e -> dialog.close());
-        layout.getChildren().add(btnClose);
 
-        dialog.setScene(new Scene(layout, 480, 480));
+        VBox footer = new VBox(btnClose);
+        footer.setAlignment(Pos.CENTER_LEFT);
+        footer.setPadding(new Insets(10, 25, 25, 25));
+        footer.setStyle("-fx-background-color:#ffffff;");
+
+        VBox root = new VBox(scrollPane, footer);
+        root.setStyle("-fx-background-color:#ffffff;");
+        VBox.setVgrow(scrollPane, Priority.ALWAYS);
+
+        dialog.setScene(new Scene(root, 560, 560));
+        dialog.setMinWidth(520);
+        dialog.setMinHeight(420);
         dialog.centerOnScreen();
         dialog.showAndWait();
     }
